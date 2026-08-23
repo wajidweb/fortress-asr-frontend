@@ -12,45 +12,28 @@
 .shieldTrack {
   fill: none;
   stroke: #1e293b; /* Dark slate track for high-contrast */
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 
 /* Animated shield border */
 .shield {
   fill: none;
-  stroke: #cba135; /* Fortress Gold accent */
-  stroke-width: 2.5;
+  stroke: #ffffff; /* Smooth animated white border track */
+  stroke-width: 2.2;
   stroke-linecap: round;
   stroke-dasharray: 30 70;
   animation: shieldMove 2s linear infinite;
 }
 
-/* Lock */
-.lockBody {
-  fill: #cba135; /* Gold body */
-  animation: lockPulse 1.5s ease-in-out infinite;
+/* Logo Image pulsating animation with smooth rounded corners */
+.logoImage {
+  animation: logoPulse 1.8s ease-in-out infinite;
+  transform-origin: 32px 29px; /* Center point of the x="19" y="16" width="26" height="26" image */
+  border-radius: 15%; /* Modern browser rendering */
+  clip-path: inset(0% round 15%); /* Cross-browser SVG clip-path fallback */
 }
 
-.lock {
-  fill: none;
-  stroke: #cbd5e1; /* Slate ring */
-  stroke-width: 2.5;
-  stroke-linecap: round;
-}
-
-/* Keyhole */
-.keyhole {
-  fill: #1e293b; /* Dark backdrop */
-  animation: keyPulse 1.5s ease-in-out infinite;
-}
-
-.keyholeLine {
-  stroke: #1e293b;
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-
-/* Scanning line */
+/* Scanning laser line */
 .scan {
   stroke: #ef4444; /* Alert scanner red */
   stroke-width: 1.5;
@@ -70,31 +53,17 @@
   }
 }
 
-/* Lock animation */
-@keyframes lockPulse {
+/* Metallic Logo Pulse animation */
+@keyframes logoPulse {
   0%,
   100% {
-    opacity: 0.65;
-    transform: scale(1);
-    transform-origin: center;
+    opacity: 0.85;
+    transform: scale(0.98);
   }
 
   50% {
     opacity: 1;
-    transform: scale(1.08);
-    transform-origin: center;
-  }
-}
-
-/* Keyhole animation */
-@keyframes keyPulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-
-  50% {
-    opacity: 1;
+    transform: scale(1.05);
   }
 }
 

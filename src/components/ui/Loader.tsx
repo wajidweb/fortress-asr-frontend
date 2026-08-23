@@ -8,7 +8,7 @@ interface LoaderProps {
 }
 
 export const Loader: React.FC<LoaderProps> = ({ 
-  size = 100, 
+  size = 140, 
   className = '', 
   fullScreen = false 
 }) => {
@@ -22,28 +22,30 @@ export const Loader: React.FC<LoaderProps> = ({
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
+        {/* Shield background track */}
         <path
           className={styles.shieldTrack}
           d="M32 4L52 12V28C52 42 44 52 32 59C20 52 12 42 12 28V12L32 4Z"
         ></path>
 
+        {/* Animated scanning shield border */}
         <path
           className={styles.shield}
           pathLength="100"
           d="M32 4L52 12V28C52 42 44 52 32 59C20 52 12 42 12 28V12L32 4Z"
         ></path>
 
-        <rect className={styles.lockBody} x="23" y="28" width="18" height="15" rx="3"></rect>
+        {/* High-Fidelity Metallic Brand Logo centered inside shield */}
+        <image
+          href="/logo.png"
+          x="19"
+          y="16"
+          width="26"
+          height="26"
+          className={styles.logoImage}
+        />
 
-        <path
-          className={styles.lock}
-          d="M27 28V23C27 20.2 29.2 18 32 18C34.8 18 37 20.2 37 23V28"
-        ></path>
-
-        <circle className={styles.keyhole} cx="32" cy="34" r="2"></circle>
-
-        <path className={styles.keyholeLine} d="M32 36V39"></path>
-
+        {/* Laser scan line passing over both shield and logo */}
         <line className={styles.scan} x1="16" y1="16" x2="48" y2="16"></line>
       </svg>
     </div>
@@ -51,7 +53,7 @@ export const Loader: React.FC<LoaderProps> = ({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-slate-900/90 z-50 transition-all duration-300">
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-950/95 z-50 transition-all duration-300">
         {content}
       </div>
     );
