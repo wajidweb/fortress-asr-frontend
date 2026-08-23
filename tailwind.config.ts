@@ -10,16 +10,12 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: '#f0f4f8',
-          100: '#dbe3ed',
-          500: '#1b3b6f', // Navy Blue Fortress Brand Color
-          600: '#152d55',
-          700: '#0f203c',
+          primary: '#032031', // Reverted to overall website base primary color
         },
         security: {
-          gold: '#cba135', // Gold accent
-          green: '#10b981', // Operational success
-          red: '#ef4444', // Patrol panic / incident alert
+          gold: '#cba135',
+          green: '#10b981',
+          red: '#ef4444',
         }
       },
     },

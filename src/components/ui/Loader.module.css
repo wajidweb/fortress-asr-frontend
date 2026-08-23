@@ -8,17 +8,17 @@
   overflow: visible;
 }
 
-/* Shield background */
+/* Shield background track (Light gray on white background) */
 .shieldTrack {
   fill: none;
-  stroke: #1e293b; /* Dark slate track for high-contrast */
+  stroke: #e2e8f0; 
   stroke-width: 2;
 }
 
-/* Animated shield border */
+/* Animated shield border (Solid Black on white background for high contrast and extreme premium feel) */
 .shield {
   fill: none;
-  stroke: #ffffff; /* Smooth animated white border track */
+  stroke: #0f172a; 
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-dasharray: 30 70;

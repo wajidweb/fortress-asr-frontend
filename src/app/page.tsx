@@ -1,44 +1,87 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import Loader from '@/components/ui/Loader';
+import ScrollToTop from '@/components/ui/ScrollToTop';
+
+// Dynamic sectional components imports
+import Hero from '@/components/sections/Hero';
+import Operations from '@/components/sections/Operations';
+import Guards from '@/components/sections/Guards';
+import ClientsSites from '@/components/sections/ClientsSites';
+import DailyOps from '@/components/sections/DailyOps';
+import MobileApp from '@/components/sections/MobileApp';
+import ClientVisibility from '@/components/sections/ClientVisibility';
+import Workflow from '@/components/sections/Workflow';
+import Security from '@/components/sections/Security';
+import RegisterForm from '@/components/sections/RegisterForm';
 
 export default function Home() {
-  const [isPageLoading, setIsPageLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState('home');
 
-  // Simulate initial mount/loading state to show off the custom security loader
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsPageLoading(false);
-    }, 1200); // Display loader for 1.2 seconds for a premium, polished feel
-
-    return () => clearTimeout(timer);
+    setMounted(true);
   }, []);
 
-  if (isPageLoading) {
+  if (!mounted) {
     return <Loader fullScreen />;
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-900 text-white p-6 animate-fade-in">
-      <div className="text-center max-w-xl flex flex-col items-center">
-        {/* Animated Security Loader Preview */}
-        <Loader size={160} className="mb-8" />
+    <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans antialiased">
+      {/* 00. Dynamic Header Navigation */}
+      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <h1 className="text-4xl font-black tracking-wider text-amber-500 sm:text-5xl uppercase">
-          Fortress ASR
-        </h1>
-        <p className="text-lg text-slate-300 font-semibold mt-4">
-          Security Operations Management System (SOMS)
-        </p>
-        <div className="w-16 h-1 bg-amber-500 mx-auto my-6 rounded"></div>
-        <p className="text-sm text-slate-400 leading-relaxed">
-          Welcome to the Fortress ASR workspace. The animated security loader is fully loaded and can be imported anywhere using:
-          <code className="block mt-3 p-2 bg-slate-800 text-amber-400 rounded text-xs select-all">
-            import Loader from '@/components/ui/Loader';
-          </code>
-        </p>
+      {/* Main Container composing granular sectional elements */}
+      <div className="flex-grow">
+        
+        {activeTab === 'home' && (
+          <div className="flex flex-col w-full animate-fade-in">
+            {/* 01. Welcome / Hero Section */}
+            <Hero onStartRegistration={() => setActiveTab('register')} />
+
+            {/* 02. Our Operations Section */}
+            <Operations />
+
+            {/* 03. Our Guards Section */}
+            <Guards />
+
+            {/* 04. Our Clients & Sites Section */}
+            <ClientsSites />
+
+            {/* 05. Daily Operations Section */}
+            <DailyOps />
+
+            {/* 06. Guard Mobile App Section */}
+            <MobileApp />
+
+            {/* 07. Client Visibility Section */}
+            <ClientVisibility />
+
+            {/* 08. Everything in One Place Flowchart */}
+            <Workflow />
+
+            {/* 09. Secure & Organised Section */}
+            <Security onStartRegistration={() => setActiveTab('register')} />
+          </div>
+        )}
+
+        {activeTab === 'register' && (
+          <div className="animate-fade-in">
+            {/* Decoupled Interactive Guard Self-Registration Form */}
+            <RegisterForm />
+          </div>
+        )}
       </div>
-    </main>
+
+      {/* 10. Dynamic Footer */}
+      <Footer />
+
+      {/* 11. Miniature Floating Scroll-To-Top Button (Fixed Bottom-Right) */}
+      <ScrollToTop />
+    </div>
   );
 }
