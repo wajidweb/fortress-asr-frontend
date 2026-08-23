@@ -1,19 +1,9 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Lock } from 'lucide-react';
 
-interface ClientsSitesProps {
-  onStartRegistration?: () => void;
-}
-
-export const ClientsSites: React.FC<ClientsSitesProps> = ({ onStartRegistration }) => {
-  const handleRegisterClick = (e: React.MouseEvent) => {
-    if (onStartRegistration) {
-      e.preventDefault();
-      onStartRegistration();
-    }
-  };
-
+export const ClientsSites: React.FC = () => {
   return (
     <section className="relative bg-white py-12 lg:py-0 lg:min-h-[calc(100vh-80px)] overflow-hidden border-b border-slate-100 flex flex-col justify-center font-sans">
       
@@ -48,7 +38,7 @@ export const ClientsSites: React.FC<ClientsSitesProps> = ({ onStartRegistration 
 
           </div>
 
-          {/* Right Column: Premium High Contrast Typography & CTA Buttons (Floating rotating badge removed) */}
+          {/* Right Column: Premium High Contrast Typography & CTA Buttons (Client services are coming soon) */}
           <div className="lg:col-span-7 flex flex-col space-y-8 relative text-left">
             
             {/* Small Upper Sub Heading Descriptor */}
@@ -59,10 +49,10 @@ export const ClientsSites: React.FC<ClientsSitesProps> = ({ onStartRegistration 
 
               {/* Giant Uppercase Title matching image.png with zero dashes */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black uppercase text-slate-900 leading-[0.98] tracking-tighter">
-                SECURE <br />
-                YOUR PREMISES <br />
+                PROTECT <br />
+                YOUR PROPERTIES <br />
                 <span className="text-[#032031]">WITH ABSOLUTE</span> <br />
-                ACCOUNTABILITY
+                TRANSPARENCY
               </h1>
             </div>
 
@@ -71,22 +61,22 @@ export const ClientsSites: React.FC<ClientsSitesProps> = ({ onStartRegistration 
               Every property requires customized protection. We manage unique client portfolios, secure locations, and site instructions with total accuracy. From setting up precise geofence boundaries to coordinating specific guard requirements, we organize your site details in our central operations dashboard. This allows our supervisors to dispatch officers according to your exact requirements and gives property owners uncompromised visibility into their active security services.
             </p>
 
-            {/* CLEAR, PREMIUM ACTIONS & BUTTONS */}
+            {/* CLEAR, PREMIUM ACTIONS & BUTTONS - Decoupled to direct URL routes for coming-soon services */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
-              <button 
-                onClick={handleRegisterClick}
-                className="px-8 py-4 bg-[#032031] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2.5"
+              <Link 
+                href="/coming-soon"
+                className="inline-flex justify-center items-center px-8 py-4 bg-[#032031] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2.5"
               >
                 <Lock className="w-4 h-4" />
                 Register Client Site
-              </button>
+              </Link>
 
-              <button 
-                onClick={handleRegisterClick}
-                className="px-8 py-4 bg-white border border-[#032031] text-[#032031] hover:bg-slate-50 font-bold text-xs uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5"
+              <Link 
+                href="/coming-soon"
+                className="inline-flex justify-center items-center px-8 py-4 bg-white border border-[#032031] text-[#032031] hover:bg-slate-50 font-bold text-xs uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5"
               >
                 Hire Our Guards
-              </button>
+              </Link>
             </div>
 
           </div>

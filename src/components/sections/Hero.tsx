@@ -1,12 +1,9 @@
 import React from 'react';
 import Image from 'next/image';
-import { ArrowRight, Lock, Clock, Users, Award } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Lock, Award } from 'lucide-react';
 
-interface HeroProps {
-  onStartRegistration: () => void;
-}
-
-export const Hero: React.FC<HeroProps> = ({ onStartRegistration }) => {
+export const Hero: React.FC = () => {
   return (
     <section className="relative bg-white py-12 lg:py-0 lg:min-h-[calc(100vh-80px)] overflow-hidden border-b border-slate-100 flex flex-col justify-center">
       
@@ -58,13 +55,14 @@ export const Hero: React.FC<HeroProps> = ({ onStartRegistration }) => {
                 </p>
               </div>
 
-              <button 
-                onClick={onStartRegistration}
+              {/* Standard Page Link instead of state callback (Linked directly to /coming-soon for client inquiry) */}
+              <Link 
+                href="/coming-soon"
                 className="w-11 h-11 bg-white text-[#032031] hover:bg-slate-100 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 shadow-md hover:shadow-xl focus:outline-none"
-                aria-label="Start Registration"
+                aria-label="Start Onboarding"
               >
                 <ArrowRight className="w-5 h-5" />
-              </button>
+              </Link>
             </div>
 
           </div>
@@ -94,20 +92,20 @@ export const Hero: React.FC<HeroProps> = ({ onStartRegistration }) => {
 
             {/* CLEAR, PREMIUM ACTIONS & BUTTONS */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
-              <button 
-                onClick={onStartRegistration}
+              <Link 
+                href="/register"
                 className="px-8 py-4 bg-[#032031] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2.5"
               >
                 <Lock className="w-4 h-4" />
                 Register As Officer
-              </button>
+              </Link>
 
-              <button 
-                onClick={onStartRegistration}
+              <Link 
+                href="/coming-soon"
                 className="px-8 py-4 bg-white border border-[#032031] text-[#032031] hover:bg-slate-50 font-bold text-xs uppercase tracking-widest rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5"
               >
                 Hire Our Guards
-              </button>
+              </Link>
             </div>
 
             {/* Circular floating rotating badge (Top-Right of titles) */}

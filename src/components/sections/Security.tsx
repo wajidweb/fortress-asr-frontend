@@ -1,18 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 
-interface SecurityProps {
-  onStartRegistration?: () => void;
-}
-
-export const Security: React.FC<SecurityProps> = ({ onStartRegistration }) => {
-  const handleRegisterClick = (e: React.MouseEvent) => {
-    if (onStartRegistration) {
-      e.preventDefault();
-      onStartRegistration();
-    }
-  };
-
+export const Security: React.FC = () => {
   return (
     <section className="relative bg-white py-16 lg:py-20 overflow-hidden font-sans border-b border-slate-100 flex flex-col justify-center">
       
@@ -40,16 +29,14 @@ export const Security: React.FC<SecurityProps> = ({ onStartRegistration }) => {
         {/* Long, spacious Call-To-Action buttons with whitespace-nowrap preventing any text line-breaks */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 w-full sm:w-auto">
           <Link 
-            href="#register"
-            onClick={handleRegisterClick}
+            href="/register"
             className="inline-flex justify-center items-center min-w-[220px] px-8 py-4 bg-[#032031] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest rounded-full shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
           >
             Onboard As Officer
           </Link>
 
           <Link 
-            href="#register"
-            onClick={handleRegisterClick}
+            href="/coming-soon"
             className="inline-flex justify-center items-center min-w-[220px] px-8 py-4 bg-white border border-[#032031] text-[#032031] hover:bg-slate-50 font-bold text-xs uppercase tracking-widest rounded-full transition-all duration-300 whitespace-nowrap"
           >
             Hire Our Guards

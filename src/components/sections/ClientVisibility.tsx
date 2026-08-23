@@ -55,10 +55,10 @@ export const ClientVisibility: React.FC = () => {
               We believe that premium property protection is built on total transparency. Fortress ASR provides your organization with secure, real time visibility into our guarding services. Through our isolated client web portal, you can monitor live officer active states, review verified checkpoint patrols, and inspect published incident logs for your contracted locations, giving you absolute confidence that your sites are actively defended.
             </p>
 
-            {/* Custom Capsule Button matching the exact design and shape of 'Book an appointment' */}
+            {/* Custom Capsule Button matching the exact design and shape of 'Book an appointment' (Linked directly to /coming-soon for client inquiry) */}
             <div className="pt-2">
               <Link 
-                href="#register" 
+                href="/coming-soon" 
                 className="inline-flex items-center justify-between gap-6 pl-6 pr-2.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-[#032031] font-black text-xs uppercase tracking-widest rounded-full transition-all duration-300 shadow-sm"
               >
                 <span>Request Portal Access</span>

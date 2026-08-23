@@ -16,11 +16,9 @@ import MobileApp from '@/components/sections/MobileApp';
 import ClientVisibility from '@/components/sections/ClientVisibility';
 import Workflow from '@/components/sections/Workflow';
 import Security from '@/components/sections/Security';
-import RegisterForm from '@/components/sections/RegisterForm';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState('home');
 
   useEffect(() => {
     setMounted(true);
@@ -33,48 +31,36 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col font-sans antialiased">
       {/* 00. Dynamic Header Navigation */}
-      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navbar />
 
-      {/* Main Container composing granular sectional elements */}
-      <div className="flex-grow">
-        
-        {activeTab === 'home' && (
-          <div className="flex flex-col w-full animate-fade-in">
-            {/* 01. Welcome / Hero Section */}
-            <Hero onStartRegistration={() => setActiveTab('register')} />
+      {/* Main Container composing granular homepage sections (Overview) */}
+      <div className="flex-grow flex flex-col w-full animate-fade-in">
+        {/* 01. Welcome / Hero Section */}
+        <Hero />
 
-            {/* 02. Our Operations Section */}
-            <Operations />
+        {/* 02. Our Operations Section */}
+        <Operations />
 
-            {/* 03. Our Guards Section */}
-            <Guards />
+        {/* 03. Our Guards Section */}
+        <Guards />
 
-            {/* 04. Our Clients & Sites Section */}
-            <ClientsSites />
+        {/* 04. Our Clients & Sites Section */}
+        <ClientsSites />
 
-            {/* 05. Daily Operations Section */}
-            <DailyOps />
+        {/* 05. Daily Operations Section */}
+        <DailyOps />
 
-            {/* 06. Guard Mobile App Section */}
-            <MobileApp />
+        {/* 06. Guard Mobile App Section */}
+        <MobileApp />
 
-            {/* 07. Client Visibility Section */}
-            <ClientVisibility />
+        {/* 07. Client Visibility Section */}
+        <ClientVisibility />
 
-            {/* 08. Everything in One Place Flowchart */}
-            <Workflow />
+        {/* 08. Everything in One Place Flowchart */}
+        <Workflow />
 
-            {/* 09. Secure & Organised Section */}
-            <Security onStartRegistration={() => setActiveTab('register')} />
-          </div>
-        )}
-
-        {activeTab === 'register' && (
-          <div className="animate-fade-in">
-            {/* Decoupled Interactive Guard Self-Registration Form */}
-            <RegisterForm />
-          </div>
-        )}
+        {/* 09. Secure & Organised Section */}
+        <Security />
       </div>
 
       {/* 10. Dynamic Footer */}

@@ -49,17 +49,17 @@ export const Guards: React.FC = () => {
               Through geofenced tracking, live check in photo verification, and digital daily occurrence books, our officers remain fully accountable, responsive, and connected on every shift. We protect your properties through active, disciplined presence.
             </p>
 
-            {/* Dual CTA Buttons - Structured for both prospective Guards and Clients */}
+            {/* Dual CTA Buttons - Officer onboarding is active, client inquiry is coming soon */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2 w-full sm:w-auto">
               <Link 
-                href="#register" 
+                href="/register" 
                 className="inline-flex justify-center items-center px-7 py-3.5 bg-white text-[#032031] hover:bg-slate-100 font-bold text-xs uppercase tracking-widest rounded-full shadow-md hover:shadow-lg transition-all duration-300"
               >
                 Register As Officer
               </Link>
 
               <Link 
-                href="#register" 
+                href="/coming-soon" 
                 className="inline-flex justify-center items-center px-7 py-3.5 bg-transparent border border-white text-white hover:bg-white/10 font-bold text-xs uppercase tracking-widest rounded-full transition-all duration-300"
               >
                 Hire Our Guards

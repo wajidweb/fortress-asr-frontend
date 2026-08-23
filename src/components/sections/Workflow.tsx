@@ -68,7 +68,7 @@ export const Workflow: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-8">
         
-        {/* ROW 1: Uppercut spacious Header & CTA row (Left text content + Right Action Button, reduced spacing) */}
+        {/* ROW 1: Uppercut spacious Header & CTA row (Left text content + Right Action Button, reduced spacing, linked to /coming-soon for client onboarding) */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-6 border-b border-white/10 text-left w-full">
           <div className="space-y-4 max-w-3xl">
             <span className="text-[#cba135] font-black text-[10px] uppercase tracking-widest leading-none block">
@@ -84,7 +84,7 @@ export const Workflow: React.FC = () => {
           
           <div className="flex-shrink-0">
             <Link 
-              href="#register" 
+              href="/coming-soon" 
               className="inline-block px-8 py-4 bg-white text-[#032031] hover:bg-slate-100 font-bold text-xs uppercase tracking-widest rounded-full shadow-md hover:shadow-lg transition-all duration-300"
             >
               Get Started
