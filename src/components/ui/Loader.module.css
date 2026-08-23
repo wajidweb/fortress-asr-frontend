@@ -1,0 +1,120 @@
+.loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  overflow: visible;
+}
+
+/* Shield background */
+.shieldTrack {
+  fill: none;
+  stroke: #1e293b; /* Dark slate track for high-contrast */
+  stroke-width: 2.5;
+}
+
+/* Animated shield border */
+.shield {
+  fill: none;
+  stroke: #cba135; /* Fortress Gold accent */
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 30 70;
+  animation: shieldMove 2s linear infinite;
+}
+
+/* Lock */
+.lockBody {
+  fill: #cba135; /* Gold body */
+  animation: lockPulse 1.5s ease-in-out infinite;
+}
+
+.lock {
+  fill: none;
+  stroke: #cbd5e1; /* Slate ring */
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+/* Keyhole */
+.keyhole {
+  fill: #1e293b; /* Dark backdrop */
+  animation: keyPulse 1.5s ease-in-out infinite;
+}
+
+.keyholeLine {
+  stroke: #1e293b;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Scanning line */
+.scan {
+  stroke: #ef4444; /* Alert scanner red */
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: scan 1.8s ease-in-out infinite;
+}
+
+/* Shield border movement */
+@keyframes shieldMove {
+  from {
+    stroke-dashoffset: 100;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Lock animation */
+@keyframes lockPulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(1);
+    transform-origin: center;
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+    transform-origin: center;
+  }
+}
+
+/* Keyhole animation */
+@keyframes keyPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Security scanner */
+@keyframes scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  80% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(35px);
+  }
+}
