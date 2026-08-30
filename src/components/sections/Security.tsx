@@ -29,7 +29,7 @@ export const Security: React.FC = () => {
         {/* Long, spacious Call-To-Action buttons with whitespace-nowrap preventing any text line-breaks */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 w-full sm:w-auto">
           <Link 
-            href="/register"
+            href="/register/guard"
             className="inline-flex justify-center items-center min-w-[220px] px-8 py-4 bg-[#032031] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest rounded-full shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap"
           >
             Onboard As Officer

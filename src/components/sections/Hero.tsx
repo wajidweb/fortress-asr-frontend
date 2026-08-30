@@ -93,7 +93,7 @@ export const Hero: React.FC = () => {
             {/* CLEAR, PREMIUM ACTIONS & BUTTONS */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
               <Link 
-                href="/register"
+                href="/register/guard"
                 className="px-8 py-4 bg-[#032031] hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2.5"
               >
                 <Lock className="w-4 h-4" />

@@ -13,7 +13,8 @@ export const Navbar: React.FC = () => {
   // Modular Menu Items navigating to distinct Next.js pages
   const menuItems = [
     { id: 'home', label: 'Overview', href: '/' },
-    { id: 'register', label: 'Guard Registration', href: '/register' },
+    { id: 'register-guard', label: 'Guard Registration', href: '/register/guard' },
+    { id: 'register-client', label: 'Client Registration', href: '/register/client' },
   ];
 
   return (
@@ -61,13 +62,13 @@ export const Navbar: React.FC = () => {
               })}
             </div>
 
-            {/* Right Action Button (Secure Entrance - Navigates to Register Page for demo) */}
+            {/* Right Action Button (Secure Login - Navigates to Login Page) */}
             <Link 
-              href="/coming-soon"
+              href="/login"
               className="flex items-center gap-2 px-5 py-2.5 bg-white text-[#032031] hover:bg-slate-100 font-bold text-xs uppercase tracking-wider rounded-lg transition-all duration-300"
             >
               <Lock className="w-3.5 h-3.5" />
-              Secure Entrance
+              Secure Login
             </Link>
           </div>
 
@@ -101,11 +102,11 @@ export const Navbar: React.FC = () => {
             })}
             <div className="pt-4 border-t border-white/5">
               <Link 
-                href="/coming-soon"
+                href="/login"
                 className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-white text-[#032031] font-bold text-xs uppercase tracking-wider rounded-lg shadow-md"
               >
                 <Lock className="w-4 h-4" />
-                Secure Entrance
+                Secure Login
               </Link>
             </div>
           </div>

@@ -5,7 +5,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'SYSTEM_ADMIN' | 'SUPERVISOR' | 'SECURITY_GUARD' | 'CLIENT';
+  role: 'SUPER_ADMIN' | 'SUPERVISOR' | 'GUARD' | 'CLIENT';
   guardProfile?: any;
   clientProfile?: any;
 }

@@ -52,7 +52,7 @@ export const Guards: React.FC = () => {
             {/* Dual CTA Buttons - Officer onboarding is active, client inquiry is coming soon */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2 w-full sm:w-auto">
               <Link 
-                href="/register" 
+                href="/register/guard" 
                 className="inline-flex justify-center items-center px-7 py-3.5 bg-white text-[#032031] hover:bg-slate-100 font-bold text-xs uppercase tracking-widest rounded-full shadow-md hover:shadow-lg transition-all duration-300"
               >
                 Register As Officer
