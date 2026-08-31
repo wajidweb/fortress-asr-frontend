@@ -19,24 +19,53 @@ interface AuthState {
   updateUser: (user: Partial<User>) => void;
 }
 
+// Helper to safely load initial state on browser mount
+const getInitialState = () => {
+  if (typeof window === 'undefined') {
+    return { user: null, token: null, isAuthenticated: false };
+  }
+  try {
+    const token = localStorage.getItem('fortress_auth_token');
+    const userStr = localStorage.getItem('fortress_user');
+    if (token && userStr) {
+      return {
+        token,
+        user: JSON.parse(userStr) as User,
+        isAuthenticated: true,
+      };
+    }
+  } catch (e) {
+    // Fail-safe
+  }
+  return { user: null, token: null, isAuthenticated: false };
+};
+
+const initialState = getInitialState();
+
 export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
+  user: initialState.user,
+  token: initialState.token,
+  isAuthenticated: initialState.isAuthenticated,
   login: (user, token) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('fortress_auth_token', token);
+      localStorage.setItem('fortress_user', JSON.stringify(user));
     }
     set({ user, token, isAuthenticated: true });
   },
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('fortress_auth_token');
+      localStorage.removeItem('fortress_user');
     }
     set({ user: null, token: null, isAuthenticated: false });
   },
   updateUser: (partialUser) =>
-    set((state) => ({
-      user: state.user ? { ...state.user, ...partialUser } : null,
-    })),
+    set((state) => {
+      const updatedUser = state.user ? { ...state.user, ...partialUser } : null;
+      if (typeof window !== 'undefined' && updatedUser) {
+        localStorage.setItem('fortress_user', JSON.stringify(updatedUser));
+      }
+      return { user: updatedUser };
+    }),
 }));

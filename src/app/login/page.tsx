@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get('registered');
-  const login = useAuthStore((state) => state.login);
+  const { user, isAuthenticated, login } = useAuthStore();
   
   // Form fields
   const [email, setEmail] = useState('');
@@ -23,6 +23,19 @@ function LoginForm() {
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
+
+  // Auto redirect already authenticated users to their dashboards
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'SUPER_ADMIN') {
+        router.push('/admin/dashboard');
+      } else if (user.role === 'CLIENT') {
+        router.push('/client/dashboard');
+      } else if (user.role === 'GUARD') {
+        router.push('/guard/dashboard');
+      }
+    }
+  }, [isAuthenticated, user, router]);
 
   // Client-side validations
   const validateForm = (): boolean => {
@@ -64,15 +77,15 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      const { accessToken, user } = await authService.login({ email, password });
-      login(user, accessToken);
+      const { accessToken, user: loggedInUser } = await authService.login({ email, password });
+      login(loggedInUser, accessToken);
       
-      if (user.role === 'SUPER_ADMIN') {
+      if (loggedInUser.role === 'SUPER_ADMIN') {
         router.push('/admin/dashboard');
-      } else if (user.role === 'CLIENT') {
+      } else if (loggedInUser.role === 'CLIENT') {
         router.push('/client/dashboard');
-      } else if (user.role === 'GUARD') {
-        router.push('/mobile-placeholder');
+      } else if (loggedInUser.role === 'GUARD') {
+        router.push('/guard/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
@@ -80,6 +93,15 @@ function LoginForm() {
       setLoading(false);
     }
   };
+
+  // Prevent showing login form while redirecting authenticated users
+  if (isAuthenticated && user) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center text-[#032031] font-black text-sm uppercase tracking-wider">
+        Redirecting to secure gateway...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-[#032031] overflow-y-auto lg:overflow-hidden font-sans antialiased text-black">
