@@ -21,6 +21,7 @@ export const Footer: React.FC = () => {
                   src="/logo.png" 
                   alt="Fortress ASR" 
                   fill 
+                  sizes="32px"
                   className="object-contain rounded"
                 />
               </div>

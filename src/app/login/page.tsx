@@ -115,6 +115,7 @@ function LoginForm() {
             src="/operations2.jpeg"
             alt="Security Operations Center"
             fill
+            sizes="(max-width: 1024px) 100vw, 50vw"
             className="object-cover object-center scale-105 filter saturate-[0.8]"
             priority
           />
@@ -159,6 +160,7 @@ function LoginForm() {
                 src="/logo.png" 
                 alt="Fortress ASR" 
                 fill 
+                sizes="32px"
                 className="object-contain rounded"
               />
             </div>

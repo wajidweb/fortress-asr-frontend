@@ -30,6 +30,7 @@ export const Navbar: React.FC = () => {
                   src="/logo.png" 
                   alt="Fortress ASR" 
                   fill 
+                  sizes="36px"
                   className="object-contain rounded"
                   priority
                 />

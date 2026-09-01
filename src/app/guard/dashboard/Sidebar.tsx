@@ -63,6 +63,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 src="/logo.png" 
                 alt="Fortress ASR" 
                 fill 
+                sizes="24px"
                 className="object-contain rounded"
               />
             </div>
