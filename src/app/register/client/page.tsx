@@ -5,16 +5,17 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { authService } from '@/services/auth.service';
-import { Mail, Eye, EyeOff, ArrowRight, Shield, User, Phone, Briefcase } from 'lucide-react';
+import { Mail, Eye, EyeOff, ArrowRight, Shield, User, Phone, Briefcase, MapPin } from 'lucide-react';
 
 export default function ClientRegisterPage() {
   const router = useRouter();
   
-  // Form fields
+  // Form fields (Sourced from Clients table specs, added required billingAddress)
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     companyName: '',
+    billingAddress: '',
     email: '',
     phoneNumber: '',
     password: '',
@@ -51,6 +52,11 @@ export default function ClientRegisterPage() {
 
     if (!formData.companyName.trim()) {
       errors.companyName = 'Company or Site name is required.';
+      isValid = false;
+    }
+
+    if (!formData.billingAddress.trim()) {
+      errors.billingAddress = 'Billing address is required.';
       isValid = false;
     }
 
@@ -147,13 +153,13 @@ export default function ClientRegisterPage() {
         </div>
 
         {/* Sidebar Copyright Info */}
-        <div className="z-10 text-[10px] text-white/50 font-black tracking-wider uppercase">
+        <div className="z-10 text-[10px] text-white/50 font-black tracking-wider uppercase font-sans">
           Fortress ASR Security Operations Management System.
         </div>
       </div>
 
       {/* RIGHT COLUMN: Fully responsive White, Black & #032031 form container (Strictly NO Grays) */}
-      <div className="w-full lg:w-1/2 bg-white flex flex-col justify-between p-6 sm:p-12 xl:p-16 relative lg:rounded-l-[42px] xl:rounded-l-[56px] shadow-2xl z-20 overflow-y-auto">
+      <div className="w-full lg:w-1/2 bg-white flex flex-col justify-between p-6 sm:p-12 xl:p-16 relative lg:rounded-l-[42px] xl:rounded-l-[56px] shadow-2xl z-20 overflow-y-auto font-sans">
         
         {/* Top Header Row within Form Card - Fully Responsive across small devices */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
@@ -190,7 +196,7 @@ export default function ClientRegisterPage() {
         </div>
 
         {/* Center Register Form Container */}
-        <div className="my-auto w-full max-w-md mx-auto py-8 sm:py-12">
+        <div className="my-auto w-full max-w-md mx-auto py-8 sm:py-12 font-sans">
           <div className="flex flex-col gap-1.5 mb-8">
             <h2 className="text-3xl xl:text-4xl font-black text-[#032031] tracking-tight">Client Register</h2>
             <p className="text-xs text-black font-black uppercase tracking-wider">Create your corporate site manager portal</p>
@@ -263,6 +269,25 @@ export default function ClientRegisterPage() {
               </div>
               {validationErrors.companyName && (
                 <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.companyName}</span>
+              )}
+            </div>
+
+            {/* Billing Address Field (Sourced from Clients table specs) */}
+            <div className="flex flex-col gap-1.5">
+              <div className="relative">
+                <input
+                  type="text"
+                  name="billingAddress"
+                  required
+                  placeholder="Billing Address (e.g. 123 Guard Street, London)"
+                  className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.billingAddress ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
+                  value={formData.billingAddress}
+                  onChange={handleChange}
+                />
+                <MapPin className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
+              </div>
+              {validationErrors.billingAddress && (
+                <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.billingAddress}</span>
               )}
             </div>
 

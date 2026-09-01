@@ -13,7 +13,11 @@ class ApiError extends Error {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set('Content-Type', 'application/json');
+  
+  // Disable application/json header for multipart form data uploads to let the browser set boundaries
+  if (!(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
 
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('fortress_auth_token');
@@ -49,8 +53,22 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   get: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'GET' }),
-  post: <T>(endpoint: string, body: any, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
-  put: <T>(endpoint: string, body: any, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  post: <T>(endpoint: string, body: any, options?: RequestInit) => {
+    const isFormData = body instanceof FormData;
+    return request<T>(endpoint, { 
+      ...options, 
+      method: 'POST', 
+      body: isFormData ? body : JSON.stringify(body) 
+    });
+  },
+  put: <T>(endpoint: string, body: any, options?: RequestInit) => {
+    const isFormData = body instanceof FormData;
+    return request<T>(endpoint, { 
+      ...options, 
+      method: 'PUT', 
+      body: isFormData ? body : JSON.stringify(body) 
+    });
+  },
   delete: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'DELETE' }),
   
   // Specific auth configuration where credentials (cookies) are needed

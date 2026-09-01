@@ -4,27 +4,70 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/services/auth.service';
-import { Shield, Calendar, CheckSquare, Compass, LogOut } from 'lucide-react';
+import Sidebar from './Sidebar';
+import Header from './Header';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
+
+// Import modular workspace sub-page components
+import ProfileSettings from './ProfileSettings';
+import { 
+  MyShifts, ShiftCheckIn, SchedulesRota, PatrolTerminal, 
+  OccurrenceBook, IncidentReports, WelfareChecks, SiteInstructions, 
+  PanicAlert 
+} from './WorkspacePanels';
 
 export default function GuardDashboard() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, updateUser } = useAuthStore();
   
   // Hydration guard state
   const [hasMounted, setHasMounted] = useState(false);
+  
+  // Sidebar and navigation states
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeMenu, setActiveMenu] = useState('my-shifts');
 
+  // SIA licensing compliance check (Checks if SIA number exists to unlock features)
+  const isProfileComplete = !!(user?.guardProfile?.siaLicenceNumber);
+
+  // Trigger client-only mount
   useEffect(() => {
     setHasMounted(true);
+    if (typeof window !== 'undefined') {
+      setIsSidebarOpen(window.innerWidth >= 1024);
+    }
   }, []);
 
+  // Active Session Hydration: Always fetch the fresh, decrypted user profile from the database on mount
+  useEffect(() => {
+    if (isAuthenticated && hasMounted) {
+      authService.getMe()
+        .then((res) => {
+          updateUser(res.user);
+        })
+        .catch((err) => {
+          if (err.status === 401) {
+            logout();
+            router.push('/login');
+          }
+        });
+    }
+  }, [isAuthenticated, hasMounted, updateUser, logout, router]);
+
+  // Handle route protection and force profile settings if SIA is incomplete on first login
   useEffect(() => {
     if (hasMounted) {
       if (!isAuthenticated || !user || user.role !== 'GUARD') {
         router.push('/login');
+        return;
+      }
+
+      // Compliance Lockout: If SIA details are missing, force them to complete profile
+      if (!isProfileComplete) {
+        setActiveMenu('profile');
       }
     }
-  }, [hasMounted, isAuthenticated, user, router]);
+  }, [hasMounted, isAuthenticated, user, isProfileComplete, router]);
 
   if (!hasMounted || !isAuthenticated || !user || user.role !== 'GUARD') {
     return (
@@ -45,76 +88,82 @@ export default function GuardDashboard() {
     router.push('/login');
   };
 
+  // Dynamic renderer mapping active menu state to the corresponding modular sub-page component
+  const renderActivePanel = () => {
+    switch (activeMenu) {
+      case 'profile':
+        return (
+          <ProfileSettings 
+            user={user}
+            updateUser={updateUser}
+            setActiveMenu={setActiveMenu}
+            isProfileComplete={isProfileComplete}
+          />
+        );
+      case 'my-shifts':
+        return <MyShifts />;
+      case 'check-in':
+        return <ShiftCheckIn />;
+      case 'my-rota':
+        return <SchedulesRota />;
+      case 'patrol-terminal':
+        return <PatrolTerminal />;
+      case 'occurrence-book':
+        return <OccurrenceBook />;
+      case 'guard-incidents':
+        return <IncidentReports />;
+      case 'welfare':
+        return <WelfareChecks />;
+      case 'instructions':
+        return <SiteInstructions />;
+      case 'panic':
+        return <PanicAlert />;
+      default:
+        return <MyShifts />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#032031] text-white font-sans flex flex-col justify-between">
+    <div className="flex h-screen w-full bg-white text-black overflow-hidden font-sans antialiased relative">
       
-      {/* Top Header Row with brand colors */}
-      <div className="border-b border-white/10 py-6 px-6 sm:px-12 bg-[#02141F]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
-          <div className="flex items-center gap-3">
-            <Shield className="w-8 h-8 text-white" />
-            <div className="flex flex-col">
-              <span className="text-[10px] text-white/70 font-black tracking-widest uppercase">Guard Mobile Terminal Console</span>
-              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-tight">Guard Dashboard</h1>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-6 py-2.5 bg-white text-[#032031] hover:bg-black hover:text-white font-black text-xs uppercase tracking-wider rounded-full transition-all duration-300 shadow-md"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
+      {/* Semi-transparent dark blur backdrop overlay for mobile viewports (only clickable if profile is complete) */}
+      {isSidebarOpen && isProfileComplete && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)}
+          className="lg:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-xs transition-opacity duration-300 cursor-pointer"
+        />
+      )}
 
-      {/* Main Stats and Site Lists */}
-      <div className="max-w-7xl mx-auto px-6 sm:px-12 py-12 flex-grow w-full flex flex-col gap-8">
+      {/* Sidebar Component */}
+      <Sidebar 
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+        activeMenu={activeMenu}
+        setActiveMenu={setActiveMenu}
+        handleLogout={handleLogout}
+        user={user}
+        isProfileComplete={isProfileComplete}
+      />
+
+      {/* Main Right Area */}
+      <div className="flex-grow flex flex-col overflow-hidden">
         
-        {/* Welcome Guard Card */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8 flex flex-col gap-1.5">
-          <span className="text-xs text-white/50 font-black uppercase tracking-wider">Active SIA Licensed Officer</span>
-          <h2 className="text-2xl font-black">Welcome Back, Officer {user.firstName} {user.lastName}</h2>
-          <p className="text-xs text-white/70 font-semibold leading-relaxed max-w-xl">
-            You are logged into your mobile terminal console. Review your current schedules, assigned site checkpoints, and submit secure incident audits.
-          </p>
-        </div>
+        {/* Header Component */}
+        <Header 
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+          isProfileComplete={isProfileComplete}
+        />
 
-        {/* Guard Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Shift Schedule */}
-          <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-white/50 font-black uppercase tracking-wider">Assigned Rota Shifts</span>
-              <span className="text-4xl font-black">5</span>
-            </div>
-            <Calendar className="w-10 h-10 text-white/20" />
+        {/* Content Area */}
+        <main className="flex-grow p-6 sm:p-8 overflow-y-auto bg-slate-50/50">
+          {/* Render the dynamically resolved modular sub-component panel */}
+          <div className="w-full h-full flex flex-col">
+            {renderActivePanel()}
           </div>
-
-          {/* Completed Patrols */}
-          <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-white/50 font-black uppercase tracking-wider">Completed Patrols</span>
-              <span className="text-4xl font-black">18</span>
-            </div>
-            <CheckSquare className="w-10 h-10 text-white/20" />
-          </div>
-
-          {/* Verification compliance */}
-          <div className="bg-white/5 border border-white/10 p-6 rounded-2xl flex items-center justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-white/50 font-black uppercase tracking-wider">GPS Checked Tasks</span>
-              <span className="text-4xl font-black">24</span>
-            </div>
-            <Compass className="w-10 h-10 text-white/20" />
-          </div>
-        </div>
-
-      </div>
-
-      {/* Footer */}
-      <div className="border-t border-white/5 py-4 text-center text-[10px] text-white/30 font-black tracking-wider uppercase bg-[#01090f]">
-        Fortress ASR Security Command.
+        </main>
       </div>
 
     </div>

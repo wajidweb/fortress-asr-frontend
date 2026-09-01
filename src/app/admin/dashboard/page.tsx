@@ -7,10 +7,11 @@ import { authService } from '@/services/auth.service';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
+import GuardManagement from './GuardManagement';
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, logout, updateUser } = useAuthStore();
   
   // Hydration guard state to ensure identical server/client first render
   const [hasMounted, setHasMounted] = useState(false);
@@ -26,6 +27,22 @@ export default function AdminDashboard() {
       setIsSidebarOpen(window.innerWidth >= 1024);
     }
   }, []);
+
+  // Active Session Hydration: Always fetch the fresh, decrypted user profile from the database on mount
+  useEffect(() => {
+    if (isAuthenticated && hasMounted) {
+      authService.getMe()
+        .then((res) => {
+          updateUser(res.user);
+        })
+        .catch((err) => {
+          if (err.status === 401) {
+            logout();
+            router.push('/login');
+          }
+        });
+    }
+  }, [isAuthenticated, hasMounted, updateUser, logout, router]);
 
   // Handle route protection only after client mounting
   useEffect(() => {
@@ -88,7 +105,7 @@ export default function AdminDashboard() {
 
         {/* Empty Page Layout Canvas Container (Content Area) */}
         <main className="flex-grow p-6 sm:p-8 overflow-y-auto bg-slate-50/50">
-          {/* Main workspace is empty - children content panels can be loaded here */}
+          {activeMenu === 'guards-dash' ? <GuardManagement /> : null}
         </main>
       </div>
 
