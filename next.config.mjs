@@ -3,6 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   allowedDevOrigins: ['192.168.100.82'],
+  experimental: {
+    webpackBuildWorker: false,
+  },
   // Retrieve backend URL from environmental variables for proxy rewrites
   async rewrites() {
     const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:5001';
