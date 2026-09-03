@@ -6,13 +6,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/services/auth.service';
-import { Mail, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
+import { Mail, Eye, EyeOff, Shield } from 'lucide-react';
+import { useUIStore } from '@/store/useUIStore';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get('registered');
   const { user, isAuthenticated, login } = useAuthStore();
+  const addToast = useUIStore((state) => state.addToast);
   
   // Form fields
   const [email, setEmail] = useState('');
@@ -20,7 +22,6 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   
   // Validation and API states
-  const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
@@ -36,6 +37,15 @@ function LoginForm() {
       }
     }
   }, [isAuthenticated, user, router]);
+
+  // Trigger toast on load if redirected from registration
+  useEffect(() => {
+    if (registered === 'true') {
+      addToast('Account created successfully! You can now log in below.', 'success');
+      // Clean query parameters from URL for clean state
+      router.replace('/login');
+    }
+  }, [registered, addToast, router]);
 
   // Client-side validations
   const validateForm = (): boolean => {
@@ -67,7 +77,6 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setValidationErrors({});
     
     if (!validateForm()) {
@@ -79,6 +88,7 @@ function LoginForm() {
     try {
       const { accessToken, user: loggedInUser } = await authService.login({ email, password });
       login(loggedInUser, accessToken);
+      addToast('Authenticated successfully.', 'success');
       
       if (loggedInUser.role === 'SUPER_ADMIN') {
         router.push('/admin/dashboard');
@@ -88,7 +98,7 @@ function LoginForm() {
         router.push('/guard/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      addToast(err.message || 'Login failed. Please check your credentials.', 'error');
     } finally {
       setLoading(false);
     }
@@ -209,22 +219,6 @@ function LoginForm() {
             <p className="text-xs text-black font-black uppercase tracking-wider">Access your Fortress ASR secure portal</p>
           </div>
 
-          {/* Registration Success Toaster Banner (Strictly White, Black & #032031) */}
-          {registered === 'true' && (
-            <div className="bg-[#032031] text-white border border-black p-4 rounded-xl mb-6 text-xs font-black leading-relaxed flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span>Account created successfully! You can now log in below.</span>
-            </div>
-          )}
-
-          {/* Error Banner */}
-          {error && (
-            <div className="bg-red-50 border border-black text-[#032031] p-4 rounded-xl mb-6 text-xs font-black leading-relaxed flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#032031] shrink-0" />
-              {error}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             
             {/* Email Field with validation */}
@@ -286,14 +280,13 @@ function LoginForm() {
               </button>
             </div>
 
-            {/* Elegant Submit Button relying solely on White, Black and #032031 */}
+            {/* Elegant Submit Button */}
             <button
               type="submit"
               disabled={loading}
               className="w-full mt-3 bg-[#032031] hover:bg-black text-white py-4 px-6 rounded-full font-black text-sm tracking-wide shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-75"
             >
               {loading ? (
-                // Beautiful fluid CSS rotating loading spinner matching the brand palette
                 <div className="flex items-center gap-2">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

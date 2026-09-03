@@ -6,9 +6,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { authService } from '@/services/auth.service';
 import { Mail, Eye, EyeOff, ArrowRight, Shield, User, Phone } from 'lucide-react';
+import { useUIStore } from '@/store/useUIStore';
 
 export default function GuardRegisterPage() {
   const router = useRouter();
+  const addToast = useUIStore((state) => state.addToast);
   
   // Form fields
   const [formData, setFormData] = useState({
@@ -21,7 +23,6 @@ export default function GuardRegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   
   // Validation and API states
-  const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +80,6 @@ export default function GuardRegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setValidationErrors({});
 
     if (!validateForm()) {
@@ -90,13 +90,16 @@ export default function GuardRegisterPage() {
 
     try {
       await authService.registerGuard(formData);
+      addToast('Guard registration successful!', 'success');
       router.push('/login?registered=true');
     } catch (err: any) {
+      let errMsg = '';
       if (Array.isArray(err.data?.error)) {
-        setError(err.data.error.map((e: any) => e.message).join(', '));
+        errMsg = err.data.error.map((e: any) => e.message).join(', ');
       } else {
-        setError(err.message || 'Registration failed. This email may already be in use.');
+        errMsg = err.message || 'Registration failed. This email may already be in use.';
       }
+      addToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -191,14 +194,6 @@ export default function GuardRegisterPage() {
             <h2 className="text-3xl xl:text-4xl font-black text-[#032031] tracking-tight">Guard Register</h2>
             <p className="text-xs text-black font-black uppercase tracking-wider">Onboard into the patrol monitoring platform</p>
           </div>
-
-          {/* Error Banner */}
-          {error && (
-            <div className="bg-red-50 border border-black text-[#032031] p-4 rounded-xl mb-6 text-xs font-black leading-relaxed flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#032031] shrink-0" />
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             

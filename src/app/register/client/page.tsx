@@ -6,9 +6,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { authService } from '@/services/auth.service';
 import { Mail, Eye, EyeOff, ArrowRight, Shield, User, Phone, Briefcase, MapPin } from 'lucide-react';
+import { useUIStore } from '@/store/useUIStore';
 
 export default function ClientRegisterPage() {
   const router = useRouter();
+  const addToast = useUIStore((state) => state.addToast);
   
   // Form fields (Sourced from Clients table specs, added required billingAddress)
   const [formData, setFormData] = useState({
@@ -23,7 +25,6 @@ export default function ClientRegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   
   // Validation and API states
-  const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
@@ -91,7 +92,6 @@ export default function ClientRegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setValidationErrors({});
 
     if (!validateForm()) {
@@ -102,13 +102,16 @@ export default function ClientRegisterPage() {
 
     try {
       await authService.registerClient(formData);
+      addToast('Client registration successful!', 'success');
       router.push('/login?registered=true');
     } catch (err: any) {
+      let errMsg = '';
       if (Array.isArray(err.data?.error)) {
-        setError(err.data.error.map((e: any) => e.message).join(', '));
+        errMsg = err.data.error.map((e: any) => e.message).join(', ');
       } else {
-        setError(err.message || 'Registration failed. This email may already be in use.');
+        errMsg = err.message || 'Registration failed. This email/company name may already be in use.';
       }
+      addToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -123,8 +126,8 @@ export default function ClientRegisterPage() {
         {/* Full background operations image */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/operations3.jpeg"
-            alt="Security Operations Control Client Monitor"
+            src="/operations1.jpeg"
+            alt="Security Operations Center"
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
             className="object-cover object-center scale-105 filter saturate-[0.8]"
@@ -139,14 +142,14 @@ export default function ClientRegisterPage() {
         <div className="z-10 flex items-center gap-2">
           <Shield className="w-5 h-5 text-white" />
           <span className="text-xs text-white font-black tracking-wider uppercase">
-            Complete Client Site Management
+            Create a Corporate Client Account
           </span>
         </div>
 
         {/* Center Marketing Copy (Tailored for Clients) */}
         <div className="my-auto z-10 flex flex-col gap-4 max-w-lg">
           <h1 className="text-4xl xl:text-5xl font-black text-white leading-tight tracking-tight">
-            Real Time Client Site Monitoring.
+            Deploy & Monitor Your Security Assets.
           </h1>
           <p className="text-sm xl:text-base text-white/90 font-bold leading-relaxed">
             Monitor guard positions, inspect live digital occurrence books, and download verified proof of service logs at your convenience.
@@ -203,14 +206,6 @@ export default function ClientRegisterPage() {
             <h2 className="text-3xl xl:text-4xl font-black text-[#032031] tracking-tight">Client Register</h2>
             <p className="text-xs text-black font-black uppercase tracking-wider">Create your corporate site manager portal</p>
           </div>
-
-          {/* Error Banner */}
-          {error && (
-            <div className="bg-red-50 border border-black text-[#032031] p-4 rounded-xl mb-6 text-xs font-black leading-relaxed flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#032031] shrink-0" />
-              {error}
-            </div>
-          )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             

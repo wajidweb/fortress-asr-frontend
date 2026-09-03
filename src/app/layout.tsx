@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import Toaster from '@/components/ui/Toaster';
 
 // Premium SEO Optimization Metadata with zero dashes and logo.png mapped as favicon
 export const metadata: Metadata = {
@@ -64,7 +65,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="antialiased font-sans" suppressHydrationWarning>{children}</body>
+      <body className="antialiased font-sans" suppressHydrationWarning>
+        <Toaster />
+        {children}
+      </body>
     </html>
   );
 }
