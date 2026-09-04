@@ -25,6 +25,11 @@ function LoginForm() {
   const [validationErrors, setValidationErrors] = useState<{ email?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
 
+  // Resend Verification states
+  const [showResend, setShowResend] = useState(false);
+  const [resendEmail, setResendEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+
   // Auto redirect already authenticated users to their dashboards
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -41,7 +46,7 @@ function LoginForm() {
   // Trigger toast on load if redirected from registration
   useEffect(() => {
     if (registered === 'true') {
-      addToast('Account created successfully! You can now log in below.', 'success');
+      addToast('Account created successfully! A verification email has been sent. Please verify your email before logging in.', 'success');
       // Clean query parameters from URL for clean state
       router.replace('/login');
     }
@@ -99,8 +104,29 @@ function LoginForm() {
       }
     } catch (err: any) {
       addToast(err.message || 'Login failed. Please check your credentials.', 'error');
+      if (err.data?.isEmailVerified === false) {
+        setShowResend(true);
+        setResendEmail(email);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!resendEmail) {
+      addToast('Please enter a valid email address.', 'error');
+      return;
+    }
+    setResendLoading(true);
+    try {
+      await authService.resendVerification({ email: resendEmail });
+      addToast('Verification email resent successfully! Please check your inbox.', 'success');
+      setShowResend(false);
+    } catch (err: any) {
+      addToast(err.message || 'Failed to resend verification email.', 'error');
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -219,6 +245,42 @@ function LoginForm() {
             <p className="text-xs text-black font-black uppercase tracking-wider">Access your Fortress ASR secure portal</p>
           </div>
 
+          {showResend && (
+            <div className="mb-6 p-4 bg-[#032031]/5 border-2 border-black rounded-2xl flex flex-col gap-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black uppercase tracking-wider text-[#032031]">Resend Verification</span>
+                <button 
+                  type="button" 
+                  onClick={() => setShowResend(false)} 
+                  className="text-xs font-black text-black hover:text-red-600 transition"
+                >
+                  ✕ Close
+                </button>
+              </div>
+              <p className="text-xs font-bold text-black leading-relaxed">
+                Enter your email address below to receive a new verification link.
+              </p>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="email"
+                  required
+                  placeholder="Your Email Address"
+                  className="w-full px-4 py-2.5 border border-black rounded-full text-xs font-bold placeholder-black bg-white hover:bg-slate-50 transition"
+                  value={resendEmail}
+                  onChange={(e) => setResendEmail(e.target.value)}
+                />
+                <button
+                  type="button"
+                  disabled={resendLoading}
+                  onClick={handleResendVerification}
+                  className="w-full bg-[#032031] text-white font-black text-xs uppercase tracking-wider py-2.5 rounded-full hover:bg-black transition duration-200 disabled:opacity-50"
+                >
+                  {resendLoading ? 'Sending link...' : 'Resend Email Link'}
+                </button>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             
             {/* Email Field with validation */}
@@ -269,14 +331,24 @@ function LoginForm() {
               )}
             </div>
 
-            {/* Forgot Password Trigger */}
-            <div className="flex justify-start text-xs font-black">
+            {/* Forgot Password & Resend Verification Triggers */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs font-black">
               <button
                 type="button"
                 className="text-black hover:text-[#032031] hover:underline transition duration-200"
                 onClick={() => router.push('/forgot-password')}
               >
                 Forgot Password?
+              </button>
+              <button
+                type="button"
+                className="text-[#032031] hover:underline transition duration-200"
+                onClick={() => {
+                  setShowResend(true);
+                  if (email) setResendEmail(email);
+                }}
+              >
+                Resend verification email?
               </button>
             </div>
 
