@@ -158,7 +158,7 @@ export default function GuardDashboard() {
         />
 
         {/* Content Area */}
-        <main className="flex-grow p-6 sm:p-8 overflow-y-auto bg-slate-50/50">
+        <main className="flex-grow p-6 sm:p-8 overflow-y-auto bg-white">
           {/* Render the dynamically resolved modular sub-component panel */}
           <div className="w-full h-full flex flex-col">
             {renderActivePanel()}

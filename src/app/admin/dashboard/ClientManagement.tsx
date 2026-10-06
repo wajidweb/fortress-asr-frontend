@@ -1,44 +1,45 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { adminService, GuardProfile } from '@/services/admin.service';
+import { adminService, ClientManagementProfile } from '@/services/admin.service';
 import { useUIStore } from '@/store/useUIStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
 import { 
-  Users, 
+  Building2, 
   CheckCircle2, 
-  ShieldCheck, 
-  ShieldAlert, 
-  Ban, 
-  UserCheck, 
-  FileText, 
-  ExternalLink, 
-  Award, 
-  Phone, 
-  Mail, 
   Clock, 
   Search, 
-  Eye, 
-  X, 
-  User, 
-  AlertCircle,
+  MapPin, 
+  Mail, 
+  Phone, 
+  ShieldCheck, 
+  Ban, 
+  UserCheck, 
+  ExternalLink,
+  Layers,
   Calendar,
-  Lock,
+  AlertCircle,
+  Globe,
+  Eye,
+  X,
+  User,
   DollarSign,
-  Shield
+  Shield,
+  FileText,
+  Lock
 } from 'lucide-react';
 
-export const GuardManagement: React.FC = () => {
-  const [guards, setGuards] = useState<GuardProfile[]>([]);
+export const ClientManagement: React.FC = () => {
+  const [clients, setClients] = useState<ClientManagementProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Selected guard for Modal popup
-  const [selectedGuard, setSelectedGuard] = useState<GuardProfile | null>(null);
+  
+  // Selected client for Modal popup
+  const [selectedClient, setSelectedClient] = useState<ClientManagementProfile | null>(null);
 
   // Tabs: 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED' | 'ALL'
   const [activeTab, setActiveTab] = useState<'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED' | 'ALL'>('PENDING_APPROVAL');
@@ -49,33 +50,33 @@ export const GuardManagement: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setSelectedGuard(null);
+        setSelectedClient(null);
       }
     };
-    if (selectedGuard) {
+    if (selectedClient) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedGuard]);
+  }, [selectedClient]);
 
-  // Load guards based on active tab
-  const loadGuards = async () => {
+  // Load clients based on active tab
+  const loadClients = async () => {
     setLoading(true);
     setError('');
     try {
       const statusFilter = activeTab === 'ALL' ? undefined : activeTab;
-      const res = await adminService.getGuards(statusFilter);
-      setGuards(res.guards);
+      const res = await adminService.getClients(statusFilter);
+      setClients(res.clients);
 
-      // If a guard is open in modal, update snapshot
-      if (selectedGuard) {
-        const updatedSelected = res.guards.find(g => g.id === selectedGuard.id || g.userId === selectedGuard.userId);
+      // If a client is open in modal, update its snapshot
+      if (selectedClient) {
+        const updatedSelected = res.clients.find(c => c.id === selectedClient.id || c.userId === selectedClient.userId);
         if (updatedSelected) {
-          setSelectedGuard(updatedSelected);
+          setSelectedClient(updatedSelected);
         }
       }
     } catch (err: any) {
-      const msg = err.message || 'Failed to fetch guard profiles from secure API.';
+      const msg = err.message || 'Failed to fetch corporate client accounts.';
       setError(msg);
       addToast(msg, 'error');
     } finally {
@@ -84,7 +85,7 @@ export const GuardManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    loadGuards();
+    loadClients();
   }, [activeTab]);
 
   const handleApprove = async (id: string, name: string) => {
@@ -92,13 +93,13 @@ export const GuardManagement: React.FC = () => {
     setError('');
     setSuccess('');
     try {
-      await adminService.approveGuard(id);
-      const msg = `Officer "${name || 'Guard'}" successfully approved and marked as ACTIVE.`;
+      await adminService.approveClient(id);
+      const msg = `Client "${name || 'Partner'}" successfully approved and marked as ACTIVE.`;
       setSuccess(msg);
       addToast(msg, 'success');
-      await loadGuards();
+      await loadClients();
     } catch (err: any) {
-      const msg = err.message || 'Failed to approve guard.';
+      const msg = err.message || 'Failed to approve client account.';
       setError(msg);
       addToast(msg, 'error');
     } finally {
@@ -111,13 +112,13 @@ export const GuardManagement: React.FC = () => {
     setError('');
     setSuccess('');
     try {
-      await adminService.rejectGuard(id);
-      const msg = `Officer "${name || 'Guard'}" successfully suspended.`;
+      await adminService.rejectClient(id);
+      const msg = `Client "${name || 'Partner'}" successfully suspended.`;
       setSuccess(msg);
       addToast(msg, 'info');
-      await loadGuards();
+      await loadClients();
     } catch (err: any) {
-      const msg = err.message || 'Failed to suspend guard.';
+      const msg = err.message || 'Failed to suspend client account.';
       setError(msg);
       addToast(msg, 'error');
     } finally {
@@ -155,15 +156,16 @@ export const GuardManagement: React.FC = () => {
     }
   };
 
-  // Filter guards by search query
-  const filteredGuards = guards.filter((g) => {
+  // Filter clients by search query
+  const filteredClients = clients.filter((c) => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
-    const name = `${g.firstName || g.user?.firstName || ''} ${g.lastName || g.user?.lastName || ''}`.toLowerCase();
-    const email = (g.user?.email || '').toLowerCase();
-    const phone = (g.phoneNumber || '').toLowerCase();
-    const sia = (g.siaLicenceNumber || '').toLowerCase();
-    return name.includes(q) || email.includes(q) || phone.includes(q) || sia.includes(q);
+    const company = (c.companyName || '').toLowerCase();
+    const email = (c.user?.email || '').toLowerCase();
+    const contact = (c.contactPerson || '').toLowerCase();
+    const repName = `${c.user?.firstName || ''} ${c.user?.lastName || ''}`.toLowerCase();
+    const slug = (c.urlSlug || '').toLowerCase();
+    return company.includes(q) || email.includes(q) || contact.includes(q) || repName.includes(q) || slug.includes(q);
   });
 
   return (
@@ -204,17 +206,17 @@ export const GuardManagement: React.FC = () => {
               Fortress ASR Security Systems • Headquarters Operations
             </span>
             <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight uppercase">
-              Guard Management & Officer Compliance Audits
+              Client Management & Corporate Accounts
             </h1>
             <p className="text-xs text-black/70 font-bold">
-              Audit licensing credentials, review new registration applications, and click any officer to view their full compliance dossier.
+              Review new registration applications, approve contract partners, and click any client to view their full verified profile.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="px-3 py-1.5 bg-black text-white rounded-sm text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" />
-              <span>Total Officers: {filteredGuards.length}</span>
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Total Accounts: {filteredClients.length}</span>
             </span>
           </div>
         </div>
@@ -247,7 +249,7 @@ export const GuardManagement: React.FC = () => {
               `}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Approved Guards (Active)</span>
+              <span>Approved Clients</span>
             </button>
 
             <button
@@ -260,7 +262,7 @@ export const GuardManagement: React.FC = () => {
               `}
             >
               <Ban className="w-3.5 h-3.5" />
-              <span>Suspended / Rejected</span>
+              <span>Suspended</span>
             </button>
 
             <button
@@ -272,8 +274,8 @@ export const GuardManagement: React.FC = () => {
                 }
               `}
             >
-              <Users className="w-3.5 h-3.5" />
-              <span>All Roster Officers</span>
+              <Building2 className="w-3.5 h-3.5" />
+              <span>All Clients</span>
             </button>
           </div>
 
@@ -284,7 +286,7 @@ export const GuardManagement: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search name, SIA badge, or email..."
+              placeholder="Search company, contact, or email..."
               className="w-full pl-10 pr-4 py-2 border border-black rounded-md text-xs font-bold text-black bg-white focus:outline-none focus:ring-2 focus:ring-black placeholder:text-black/40 transition"
             />
           </div>
@@ -295,53 +297,49 @@ export const GuardManagement: React.FC = () => {
         {loading ? (
           <div className="w-full flex flex-col items-center justify-center p-20 text-black select-none text-[10px] font-black uppercase tracking-wider min-h-[350px] gap-4">
             <LoaderRectangle />
-            <span>Loading Officer Roster Records...</span>
+            <span>Loading Corporate Client Accounts...</span>
           </div>
-        ) : filteredGuards.length === 0 ? (
+        ) : filteredClients.length === 0 ? (
           <div className="w-full border-2 border-dashed border-black/30 rounded-lg p-14 flex flex-col items-center justify-center text-center gap-3">
             <div className="w-12 h-12 rounded-full bg-black/5 border border-black flex items-center justify-center text-black">
-              <Users className="w-6 h-6" />
+              <Building2 className="w-6 h-6" />
             </div>
-            <h3 className="text-sm font-black uppercase tracking-wider text-black">No Officers Found</h3>
+            <h3 className="text-sm font-black uppercase tracking-wider text-black">No Clients Found</h3>
             <p className="text-xs text-black/60 font-semibold max-w-md">
-              There are currently no security officers matching the selected category ({activeTab.replace('_', ' ')}) or search query.
+              There are currently no corporate accounts matching the selected category ({activeTab.replace('_', ' ')}) or search query.
             </p>
           </div>
         ) : (
           <div className="w-full flex flex-col gap-4">
-            {filteredGuards.map((guard) => {
-              const displayName = `${guard.firstName || guard.user?.firstName || ''} ${guard.lastName || guard.user?.lastName || ''}`.trim() || 'Officer Account';
-              const isActionLoading = actionLoadingId === guard.id || actionLoadingId === guard.userId;
-              const isExpiredSia = guard.siaExpiryDate ? new Date(guard.siaExpiryDate) <= new Date() : false;
+            {filteredClients.map((client) => {
+              const displayName = client.companyName || `${client.user?.firstName || ''} ${client.user?.lastName || ''}`.trim() || 'Pending Registration';
+              const repName = `${client.user?.firstName || ''} ${client.user?.lastName || ''}`.trim();
+              const isActionLoading = actionLoadingId === client.id || actionLoadingId === client.userId;
 
               return (
                 <div 
-                  key={guard.id}
+                  key={client.id}
                   className="w-full border-2 border-black rounded-lg p-5 sm:p-6 bg-white hover:shadow-md transition flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 group"
                 >
                   
-                  {/* Left: Avatar & Officer Info - Clickable to open modal */}
+                  {/* Left: Avatar & Organization Info - Clickable to open modal */}
                   <div 
-                    onClick={() => setSelectedGuard(guard)}
+                    onClick={() => setSelectedClient(client)}
                     className="flex items-start sm:items-center gap-5 sm:gap-6 w-full lg:w-auto cursor-pointer flex-grow"
-                    title="Click to view full officer compliance details"
+                    title="Click to view full client details"
                   >
                     
-                    {/* Guard Photo Avatar with right-side spacing */}
+                    {/* Client Logo Avatar with right-side spacing */}
                     <div className="w-16 h-16 rounded-lg bg-black/5 border-2 border-black flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner group-hover:scale-105 transition mr-2 sm:mr-3">
-                      {guard.profilePictureUrl ? (
+                      {client.logoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img 
-                          src={getFullImageUrl(guard.profilePictureUrl)} 
+                          src={getFullImageUrl(client.logoUrl)} 
                           alt={displayName} 
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="flex flex-col items-center justify-center text-black">
-                          <span className="text-base font-black">
-                            {((guard.firstName?.[0] || guard.user?.firstName?.[0] || '') + (guard.lastName?.[0] || guard.user?.lastName?.[0] || '')).toUpperCase() || 'SO'}
-                          </span>
-                        </div>
+                        <Building2 className="w-7 h-7 text-black" />
                       )}
                     </div>
 
@@ -355,75 +353,66 @@ export const GuardManagement: React.FC = () => {
 
                         {/* Status Badge */}
                         <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                          guard.status === 'ACTIVE' 
+                          client.status === 'ACTIVE' 
                             ? 'bg-black text-white' 
-                            : guard.status === 'PENDING_APPROVAL'
+                            : client.status === 'PENDING_APPROVAL'
                             ? 'bg-amber-100 text-amber-900 border border-amber-400'
                             : 'bg-red-600 text-white'
                         }`}>
-                          {guard.status === 'ACTIVE' 
-                            ? 'SIA Verified' 
-                            : guard.status === 'PENDING_APPROVAL'
-                            ? 'Pending Audit'
+                          {client.status === 'ACTIVE' 
+                            ? 'Active Partner' 
+                            : client.status === 'PENDING_APPROVAL'
+                            ? 'Pending Approval'
                             : 'Suspended'}
                         </span>
 
-                        {guard.siaLicenceNumber && (
-                          <span className="px-2 py-0.5 border border-black rounded text-[8px] font-bold text-black uppercase tracking-wider flex items-center gap-1 font-mono">
-                            <Award className="w-2.5 h-2.5 text-black" /> {guard.siaLicenceNumber}
+                        {client.urlSlug && (
+                          <span className="px-2 py-0.5 border border-black rounded text-[8px] font-bold text-black uppercase tracking-wider flex items-center gap-1">
+                            <Globe className="w-2.5 h-2.5" /> /{client.urlSlug}
                           </span>
                         )}
                       </div>
 
-                      {/* Contact Line */}
+                      {/* Contact & Rep Line */}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-black/80 font-semibold mt-0.5">
-                        {guard.user?.email && (
+                        {client.user?.email && (
                           <span className="flex items-center gap-1.5">
                             <Mail className="w-3.5 h-3.5 text-black" />
-                            <span>{guard.user.email}</span>
+                            <span>{client.user.email}</span>
                           </span>
                         )}
 
-                        {guard.phoneNumber && (
+                        {(client.contactPhone || client.user?.phoneNumber) && (
                           <span className="flex items-center gap-1.5">
                             <Phone className="w-3.5 h-3.5 text-black" />
-                            <span>{guard.phoneNumber}</span>
+                            <span>{client.contactPhone || client.user?.phoneNumber}</span>
                           </span>
                         )}
 
-                        {guard.siaExpiryDate && (
-                          <span className={`text-[11px] font-bold flex items-center gap-1 ${
-                            isExpiredSia ? 'text-red-600' : 'text-black/70'
-                          }`}>
-                            <Clock className="w-3 h-3" />
-                            <span>SIA Exp: {formatDate(guard.siaExpiryDate)} {isExpiredSia ? '(EXPIRED)' : ''}</span>
+                        {repName && (
+                          <span className="text-[11px] text-black/60 font-bold">
+                            Rep: <strong className="text-black font-black">{repName}</strong>
                           </span>
                         )}
                       </div>
 
-                      {/* Right to Work & Registration Line */}
+                      {/* Location & Sites Info */}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-black/70 font-medium mt-1">
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-black">
-                          <FileText className="w-3 h-3 text-black" />
-                          <span>RTW: {guard.rtwDocumentType || 'Passport'}</span>
-                        </span>
-
-                        {guard.rtwDocumentUrl && (
-                          <a
-                            href={getFullImageUrl(guard.rtwDocumentUrl)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-[10px] font-black text-black underline flex items-center gap-0.5 hover:text-black/70"
-                          >
-                            <span>View Scan</span>
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
+                        {client.billingAddress && (
+                          <span className="flex items-center gap-1.5 truncate max-w-md" title={client.billingAddress}>
+                            <MapPin className="w-3 h-3 text-black shrink-0" />
+                            <span className="truncate">{client.billingAddress}</span>
+                          </span>
                         )}
+
+                        <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-black">
+                          <Layers className="w-3 h-3" />
+                          <span>{client.sitesCount} {client.sitesCount === 1 ? 'Monitored Site' : 'Monitored Sites'}</span>
+                        </span>
 
                         <span className="flex items-center gap-1 text-[10px] text-black/60 font-bold">
                           <Calendar className="w-3 h-3" />
-                          <span>Registered: {formatDate(guard.createdAt)}</span>
+                          <span>Since: {formatDate(client.createdAt)}</span>
                         </span>
                       </div>
 
@@ -436,33 +425,33 @@ export const GuardManagement: React.FC = () => {
                     
                     {/* View Details Button */}
                     <button
-                      onClick={() => setSelectedGuard(guard)}
+                      onClick={() => setSelectedClient(client)}
                       className="px-3.5 py-2.5 border-2 border-black bg-white hover:bg-black/5 text-black rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
-                      title="View full officer details"
+                      title="View full client details"
                     >
                       <Eye className="w-3.5 h-3.5" />
                       <span>Details</span>
                     </button>
 
-                    {guard.status !== 'ACTIVE' && (
+                    {client.status !== 'ACTIVE' && (
                       <button
-                        onClick={() => handleApprove(guard.id, displayName)}
+                        onClick={() => handleApprove(client.id, displayName)}
                         disabled={isActionLoading}
                         className="px-4 py-2.5 bg-black hover:bg-black/85 text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
                       >
                         <UserCheck className="w-3.5 h-3.5" />
-                        <span>{isActionLoading ? 'Processing...' : 'Pass / Approve'}</span>
+                        <span>{isActionLoading ? 'Processing...' : 'Approve'}</span>
                       </button>
                     )}
 
-                    {guard.status !== 'SUSPENDED' && (
+                    {client.status !== 'SUSPENDED' && (
                       <button
-                        onClick={() => handleReject(guard.id, displayName)}
+                        onClick={() => handleReject(client.id, displayName)}
                         disabled={isActionLoading}
                         className="px-4 py-2.5 border-2 border-black text-black hover:bg-black hover:text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
                       >
                         <Ban className="w-3.5 h-3.5" />
-                        <span>{isActionLoading ? 'Processing...' : 'Reject / Lock'}</span>
+                        <span>{isActionLoading ? 'Processing...' : 'Suspend'}</span>
                       </button>
                     )}
 
@@ -477,10 +466,10 @@ export const GuardManagement: React.FC = () => {
       </div>
 
       {/* Full Details Modal Dialog */}
-      {selectedGuard && (
+      {selectedClient && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in"
-          onClick={() => setSelectedGuard(null)}
+          onClick={() => setSelectedClient(null)}
         >
           <div 
             className="w-full max-w-3xl bg-white border-2 border-black rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200"
@@ -490,14 +479,14 @@ export const GuardManagement: React.FC = () => {
             {/* Modal Top Title Bar */}
             <div className="h-14 border-b-2 border-black px-6 flex items-center justify-between bg-white shrink-0">
               <div className="flex items-center gap-2.5">
-                <Shield className="w-4 h-4 text-black" />
+                <Building2 className="w-4 h-4 text-black" />
                 <h3 className="text-xs font-black uppercase tracking-wider text-black">
-                  Security Officer Profile & Compliance Audit Dossier
+                  Corporate Client Profile & Audit Record
                 </h3>
               </div>
 
               <button
-                onClick={() => setSelectedGuard(null)}
+                onClick={() => setSelectedClient(null)}
                 className="p-1.5 border border-black rounded-md hover:bg-black hover:text-white text-black transition cursor-pointer"
                 title="Close modal (Esc)"
               >
@@ -508,53 +497,49 @@ export const GuardManagement: React.FC = () => {
             {/* Modal Scrollable Body */}
             <div className="p-6 sm:p-8 overflow-y-auto flex flex-col gap-7 select-text">
               
-              {/* Hero Officer Identity Card */}
+              {/* Hero Organization Identity Card */}
               <div className="p-5 border-2 border-black rounded-lg bg-black/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
                 <div className="flex items-center gap-5 sm:gap-6">
                   
-                  {/* Officer Portrait Box with right-side spacing */}
+                  {/* Logo / Image Box with right-side spacing */}
                   <div className="w-20 h-20 rounded-lg bg-white border-2 border-black flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative mr-2 sm:mr-3">
-                    {selectedGuard.profilePictureUrl ? (
+                    {selectedClient.logoUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={getFullImageUrl(selectedGuard.profilePictureUrl)}
-                        alt={selectedGuard.firstName || 'Officer'}
+                        src={getFullImageUrl(selectedClient.logoUrl)}
+                        alt={selectedClient.companyName || 'Corporate Client'}
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center text-black">
-                        <span className="text-lg font-black">
-                          {((selectedGuard.firstName?.[0] || selectedGuard.user?.firstName?.[0] || '') + (selectedGuard.lastName?.[0] || selectedGuard.user?.lastName?.[0] || '')).toUpperCase() || 'SO'}
-                        </span>
-                      </div>
+                      <Building2 className="w-9 h-9 text-black" />
                     )}
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-black/60">Verified Security Officer</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-black/60">Official Corporate Entity</span>
                     <h2 className="text-lg font-black text-black tracking-tight uppercase">
-                      {selectedGuard.firstName || selectedGuard.user?.firstName} {selectedGuard.lastName || selectedGuard.user?.lastName}
+                      {selectedClient.companyName || 'Pending Registration'}
                     </h2>
 
                     <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                      {selectedGuard.siaLicenceNumber && (
+                      {selectedClient.urlSlug && (
                         <span className="px-2 py-0.5 bg-white border border-black rounded text-[8px] font-bold text-black uppercase tracking-wider flex items-center gap-1 font-mono">
-                          <Award className="w-2.5 h-2.5" /> {selectedGuard.siaLicenceNumber}
+                          <Globe className="w-2.5 h-2.5" /> /client/{selectedClient.urlSlug}
                         </span>
                       )}
 
                       <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                        selectedGuard.status === 'ACTIVE'
+                        selectedClient.status === 'ACTIVE'
                           ? 'bg-black text-white'
-                          : selectedGuard.status === 'PENDING_APPROVAL'
+                          : selectedClient.status === 'PENDING_APPROVAL'
                           ? 'bg-amber-100 text-amber-900 border border-amber-400'
                           : 'bg-red-600 text-white'
                       }`}>
-                        {selectedGuard.status === 'ACTIVE'
-                          ? 'SIA Verified / Active Officer'
-                          : selectedGuard.status === 'PENDING_APPROVAL'
-                          ? 'Pending SIA Audit'
-                          : 'Suspended Officer'}
+                        {selectedClient.status === 'ACTIVE'
+                          ? 'Active Corporate Partner'
+                          : selectedClient.status === 'PENDING_APPROVAL'
+                          ? 'Pending Approval'
+                          : 'Suspended Account'}
                       </span>
                     </div>
                   </div>
@@ -562,18 +547,18 @@ export const GuardManagement: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col items-start sm:items-end text-left sm:text-right gap-1 shrink-0">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-black/60">Officer Registration</span>
-                  <span className="text-xs font-black text-black">{formatDate(selectedGuard.createdAt)}</span>
-                  <span className="text-[8px] font-medium text-black/60">{formatDateTime(selectedGuard.createdAt)}</span>
+                  <span className="text-[8px] font-black uppercase tracking-widest text-black/60">Account Inception</span>
+                  <span className="text-xs font-black text-black">{formatDate(selectedClient.createdAt)}</span>
+                  <span className="text-[8px] font-medium text-black/60">{formatDateTime(selectedClient.createdAt)}</span>
                 </div>
               </div>
 
-              {/* Grid 1: Personal & Contact Information */}
+              {/* Grid 1: Authorized Account Representative */}
               <div className="flex flex-col gap-3">
                 <div className="border-b border-black/15 pb-2 flex items-center gap-2">
                   <User className="w-3.5 h-3.5 text-black" />
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
-                    Officer Identity & Credentials
+                    Primary Account Representative
                   </h4>
                 </div>
 
@@ -581,7 +566,9 @@ export const GuardManagement: React.FC = () => {
                   <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
                     <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Full Legal Name</span>
                     <span className="text-xs font-bold text-black">
-                      {selectedGuard.firstName || selectedGuard.user?.firstName} {selectedGuard.lastName || selectedGuard.user?.lastName}
+                      {selectedClient.user?.firstName || selectedClient.user?.lastName 
+                        ? `${selectedClient.user.firstName} ${selectedClient.user.lastName}` 
+                        : 'Not Provided'}
                     </span>
                   </div>
 
@@ -589,7 +576,7 @@ export const GuardManagement: React.FC = () => {
                     <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Account Email Address</span>
                     <span className="text-xs font-bold text-black flex items-center gap-1.5 font-mono">
                       <Mail className="w-3 h-3 text-black" />
-                      <span>{selectedGuard.user?.email || 'N/A'}</span>
+                      <span>{selectedClient.user?.email || 'N/A'}</span>
                     </span>
                   </div>
 
@@ -597,167 +584,106 @@ export const GuardManagement: React.FC = () => {
                     <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Primary Mobile Phone</span>
                     <span className="text-xs font-bold text-black flex items-center gap-1.5 font-mono">
                       <Phone className="w-3 h-3 text-black" />
-                      <span>{selectedGuard.phoneNumber || 'N/A'}</span>
+                      <span>{selectedClient.user?.phoneNumber || selectedClient.contactPhone || 'N/A'}</span>
                     </span>
                   </div>
 
                   <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">User Role & Account Status</span>
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">User Role & Login State</span>
                     <span className="text-xs font-bold text-black flex items-center gap-2">
                       <span className="px-1.5 py-0.5 bg-black text-white rounded text-[8px] font-black">
-                        {selectedGuard.user?.role || 'GUARD'}
+                        {selectedClient.user?.role || 'CLIENT'}
                       </span>
                       <span className="text-[9px] font-bold text-black/70">
-                        {selectedGuard.user?.isActive ? 'Active Dispatch Roster' : 'Roster Restricted'}
+                        {selectedClient.user?.isActive ? 'Login Enabled' : 'Login Restricted'}
                       </span>
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Grid 2: Security Industry Authority (SIA) Licensing */}
-              <div className="flex flex-col gap-3">
-                <div className="border-b border-black/15 pb-2 flex items-center gap-2">
-                  <Award className="w-3.5 h-3.5 text-black" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
-                    Security Industry Authority (SIA) Licensing
-                  </h4>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">SIA 16-Digit Badge Number</span>
-                    <span className="text-xs font-bold text-black font-mono tracking-widest">
-                      {selectedGuard.siaLicenceNumber || 'Not Provided'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">SIA Licence Expiry Date</span>
-                    <span className={`text-xs font-bold ${
-                      selectedGuard.siaExpiryDate && new Date(selectedGuard.siaExpiryDate) <= new Date() 
-                        ? 'text-red-600' 
-                        : 'text-black'
-                    }`}>
-                      {formatDate(selectedGuard.siaExpiryDate)}
-                      {selectedGuard.siaExpiryDate && new Date(selectedGuard.siaExpiryDate) <= new Date() && ' (EXPIRED LICENCE)'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Standard Hourly Pay Rate</span>
-                    <span className="text-xs font-bold text-black font-mono">
-                      £{selectedGuard.payRatePerHour || '0.00'} / hour
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Licensing Audit Verification</span>
-                    <span className="text-xs font-bold text-black flex items-center gap-1.5">
-                      {selectedGuard.status === 'ACTIVE' ? (
-                        <>
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                          <span className="text-emerald-700">Verified & Approved by HQ</span>
-                        </>
-                      ) : (
-                        <>
-                          <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          <span className="text-amber-800">Pending Background Review</span>
-                        </>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid 3: Right to Work Compliance */}
+              {/* Grid 2: Corporate & Contract Specifications */}
               <div className="flex flex-col gap-3">
                 <div className="border-b border-black/15 pb-2 flex items-center gap-2">
                   <FileText className="w-3.5 h-3.5 text-black" />
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
-                    Statutory Right to Work (RTW) Compliance
+                    Corporate Entity & Invoicing Details
                   </h4>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">RTW Verification Document Type</span>
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Corporate Entity Name</span>
                     <span className="text-xs font-bold text-black">
-                      {selectedGuard.rtwDocumentType || 'Passport'}
+                      {selectedClient.companyName || 'N/A'}
                     </span>
                   </div>
 
                   <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">RTW Expiration / Permission Status</span>
-                    <span className="text-xs font-bold text-black">
-                      {selectedGuard.hasIndefiniteRTW 
-                        ? 'Indefinite Leave to Remain (No Expiry)' 
-                        : formatDate(selectedGuard.rightToWorkExpiryDate)}
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Hourly Billing Rate</span>
+                    <span className="text-xs font-bold text-black flex items-center gap-1 font-mono">
+                      <span>£{selectedClient.billingRateHour || '0.00'} / hour</span>
                     </span>
                   </div>
 
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-2 bg-white sm:col-span-2">
+                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white sm:col-span-2">
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Corporate Billing Location (Tax & Invoice Calculations)</span>
+                    <span className="text-xs font-bold text-black whitespace-pre-wrap leading-relaxed">
+                      {selectedClient.billingAddress || 'No billing address recorded.'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid 3: Operational Contacts & Monitored Sites */}
+              <div className="flex flex-col gap-3">
+                <div className="border-b border-black/15 pb-2 flex items-center gap-2">
+                  <Layers className="w-3.5 h-3.5 text-black" />
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
+                    Site Operations & Monitored Locations
+                  </h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Designated Site Contact</span>
+                    <span className="text-xs font-bold text-black">
+                      {selectedClient.contactPerson || 'Not Assigned'}
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Direct Office / Site Phone</span>
+                    <span className="text-xs font-bold text-black font-mono">
+                      {selectedClient.contactPhone || 'Not Assigned'}
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-1.5 bg-white sm:col-span-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Physical Document Scan Evidence</span>
-                      {selectedGuard.rtwDocumentUrl && (
-                        <a
-                          href={getFullImageUrl(selectedGuard.rtwDocumentUrl)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[9px] font-black uppercase tracking-wider text-black flex items-center gap-1 hover:underline cursor-pointer"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Open High-Resolution Scan</span>
-                        </a>
-                      )}
+                      <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Assigned Monitored Sites</span>
+                      <span className="text-[8px] font-black text-black uppercase">
+                        {selectedClient.sites.length} Active {selectedClient.sites.length === 1 ? 'Site' : 'Sites'}
+                      </span>
                     </div>
 
-                    {selectedGuard.rtwDocumentUrl ? (
-                      <div className="p-2.5 bg-black/5 border border-black rounded flex items-center justify-between gap-3 text-xs">
-                        <span className="font-mono text-[11px] text-black truncate max-w-lg">{selectedGuard.rtwDocumentUrl}</span>
-                        <a
-                          href={getFullImageUrl(selectedGuard.rtwDocumentUrl)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1 bg-black text-white rounded text-[9px] font-black uppercase tracking-wider shrink-0"
-                        >
-                          View Document
-                        </a>
-                      </div>
+                    {selectedClient.sites.length === 0 ? (
+                      <span className="text-xs font-bold text-black/60 italic">No operational sites currently assigned to this corporate account.</span>
                     ) : (
-                      <span className="text-xs font-bold text-red-600 italic">No document file uploaded.</span>
+                      <div className="flex flex-col gap-2 pt-1">
+                        {selectedClient.sites.map(site => (
+                          <div key={site.id} className="p-2.5 bg-black/5 border border-black rounded flex items-center justify-between gap-3 text-xs">
+                            <span className="font-bold text-black">{site.name}</span>
+                            {site.address && <span className="text-black/60 text-[11px] font-medium truncate max-w-xs">{site.address}</span>}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Grid 4: Emergency Contacts */}
-              <div className="flex flex-col gap-3">
-                <div className="border-b border-black/15 pb-2 flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-black" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
-                    Emergency Contact & Next of Kin
-                  </h4>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Contact Person Name</span>
-                    <span className="text-xs font-bold text-black">
-                      {selectedGuard.emergencyContactName || 'Not Assigned'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Emergency Contact Number</span>
-                    <span className="text-xs font-bold text-black font-mono">
-                      {selectedGuard.emergencyContactPhone || 'Not Assigned'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid 5: Audit & System Metadata */}
+              {/* Grid 4: Audit & System Metadata */}
               <div className="flex flex-col gap-3">
                 <div className="border-b border-black/15 pb-2 flex items-center gap-2">
                   <Clock className="w-3.5 h-3.5 text-black" />
@@ -768,23 +694,23 @@ export const GuardManagement: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="p-3 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Registration Date & Time</span>
-                    <span className="font-bold text-black">{formatDateTime(selectedGuard.createdAt)}</span>
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Account Opened Date & Time</span>
+                    <span className="font-bold text-black">{formatDateTime(selectedClient.createdAt)}</span>
                   </div>
 
                   <div className="p-3 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Last Credentials Update</span>
-                    <span className="font-bold text-black">{formatDateTime(selectedGuard.updatedAt)}</span>
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Last Profile Update</span>
+                    <span className="font-bold text-black">{formatDateTime(selectedClient.updatedAt)}</span>
                   </div>
 
                   <div className="p-3 border border-black rounded-md flex flex-col gap-0.5 bg-white">
                     <span className="text-[8px] font-black uppercase tracking-wider text-black/50">User Account ID</span>
-                    <span className="font-mono text-[10px] text-black select-all">{selectedGuard.userId}</span>
+                    <span className="font-mono text-[10px] text-black select-all">{selectedClient.userId}</span>
                   </div>
 
                   <div className="p-3 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Guard Profile Record ID</span>
-                    <span className="font-mono text-[10px] text-black select-all">{selectedGuard.id}</span>
+                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Client Profile Record ID</span>
+                    <span className="font-mono text-[10px] text-black select-all">{selectedClient.id}</span>
                   </div>
                 </div>
               </div>
@@ -795,40 +721,40 @@ export const GuardManagement: React.FC = () => {
             <div className="h-16 border-t-2 border-black px-6 flex items-center justify-between bg-white shrink-0">
               <div className="flex items-center gap-2 text-black text-[10px] font-bold">
                 <ShieldCheck className="w-4 h-4 text-black" />
-                <span>Verified SOMS Officer Credentials</span>
+                <span>Verified SOMS Corporate Account</span>
               </div>
 
               <div className="flex items-center gap-2.5">
-                {selectedGuard.status !== 'ACTIVE' && (
+                {selectedClient.status !== 'ACTIVE' && (
                   <button
                     onClick={async () => {
-                      const name = `${selectedGuard.firstName || selectedGuard.user?.firstName || ''} ${selectedGuard.lastName || selectedGuard.user?.lastName || ''}`.trim();
-                      await handleApprove(selectedGuard.id, name);
+                      const name = selectedClient.companyName;
+                      await handleApprove(selectedClient.id, name);
                     }}
-                    disabled={actionLoadingId === selectedGuard.id || actionLoadingId === selectedGuard.userId}
+                    disabled={actionLoadingId === selectedClient.id || actionLoadingId === selectedClient.userId}
                     className="px-4 py-2 bg-black hover:bg-black/85 text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
                   >
                     <UserCheck className="w-3.5 h-3.5" />
-                    <span>Pass / Approve</span>
+                    <span>Approve Client</span>
                   </button>
                 )}
 
-                {selectedGuard.status !== 'SUSPENDED' && (
+                {selectedClient.status !== 'SUSPENDED' && (
                   <button
                     onClick={async () => {
-                      const name = `${selectedGuard.firstName || selectedGuard.user?.firstName || ''} ${selectedGuard.lastName || selectedGuard.user?.lastName || ''}`.trim();
-                      await handleReject(selectedGuard.id, name);
+                      const name = selectedClient.companyName;
+                      await handleReject(selectedClient.id, name);
                     }}
-                    disabled={actionLoadingId === selectedGuard.id || actionLoadingId === selectedGuard.userId}
+                    disabled={actionLoadingId === selectedClient.id || actionLoadingId === selectedClient.userId}
                     className="px-4 py-2 border-2 border-black text-black hover:bg-black hover:text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
                   >
                     <Ban className="w-3.5 h-3.5" />
-                    <span>Reject / Lock</span>
+                    <span>Suspend</span>
                   </button>
                 )}
 
                 <button
-                  onClick={() => setSelectedGuard(null)}
+                  onClick={() => setSelectedClient(null)}
                   className="px-4 py-2 border border-black text-black hover:bg-black hover:text-white rounded-md text-[10px] font-black uppercase tracking-wider transition cursor-pointer"
                 >
                   Close
@@ -844,4 +770,4 @@ export const GuardManagement: React.FC = () => {
   );
 };
 
-export default GuardManagement;
+export default ClientManagement;

@@ -89,7 +89,7 @@ export default function ClientDashboard() {
       default:
         return (
           <div className="w-full flex flex-col gap-4">
-            <div className="bg-white border border-slate-200 rounded-lg p-8 flex flex-col gap-3 shadow-xs">
+            <div className="bg-white border-2 border-black rounded-lg p-8 flex flex-col gap-3 shadow-xs">
               <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Fortress ASR Security Systems</span>
               <h1 className="text-2xl font-black text-[#032031]">Welcome, {user.firstName || user.clientProfile?.companyName || 'Client Partner'}</h1>
               <p className="text-xs text-black/70 font-semibold max-w-xl">
@@ -134,7 +134,7 @@ export default function ClientDashboard() {
         />
 
         {/* Content Area */}
-        <main className="flex-grow p-6 sm:p-8 overflow-y-auto bg-slate-50/50">
+        <main className="flex-grow p-6 sm:p-8 overflow-y-auto bg-white">
           <div className="w-full h-full flex flex-col">
             {renderActivePanel()}
           </div>

@@ -64,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             
             <div className={`flex flex-col truncate transition-all duration-300 ease-in-out ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 pointer-events-none'}`}>
-              <span className="text-white text-[11px] font-black tracking-wider uppercase leading-none">
+              <span className="text-white text-[11px] font-black tracking-wider uppercase leading-none truncate">
                 Fortress ASR
               </span>
               <span className="text-[7px] text-white/60 font-bold uppercase tracking-widest mt-1">
@@ -220,21 +220,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Footer Account row (Identical to Guard Sidebar Footer account row styling) */}
       <div className="border-t border-white/10 p-3 flex flex-col gap-2 bg-black/10 shrink-0">
-        <div className={`flex items-center gap-2.5 transition-all duration-300 overflow-hidden ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}>
-          <div className="w-7 h-7 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-black text-white">
-              {user.firstName && user.lastName 
-                ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() 
-                : 'CP'}
-            </span>
-          </div>
-          <div className={`flex flex-col truncate transition-all duration-300 ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-            <span className="text-[10px] font-black leading-none truncate text-white">
-              {user.firstName ? `${user.firstName} ${user.lastName}` : user.email}
-            </span>
-            <span className="text-[7px] text-white/50 font-black uppercase mt-1 leading-none tracking-widest">Client Partner</span>
-          </div>
-        </div>
+      
 
         <button 
           onClick={handleLogout}

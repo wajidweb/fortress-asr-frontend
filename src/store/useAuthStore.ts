@@ -1,5 +1,40 @@
 import { create } from 'zustand';
 
+export interface ClientProfile {
+  id?: string;
+  userId?: string;
+  companyName?: string;
+  billingAddress?: string;
+  urlSlug?: string;
+  slug?: string;
+  logoUrl?: string | null;
+  billingRateHour?: number | string;
+  contactPerson?: string | null;
+  contactPhone?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface GuardProfile {
+  id?: string;
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string | null;
+  profilePictureUrl?: string | null;
+  siaLicenceNumber?: string | null;
+  siaExpiryDate?: string | null;
+  rtwDocumentType?: string | null;
+  rtwDocumentUrl?: string | null;
+  rightToWorkExpiryDate?: string | null;
+  hasIndefiniteRTW?: boolean;
+  status?: string;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -7,8 +42,8 @@ export interface User {
   lastName: string;
   phoneNumber?: string;
   role: 'SUPER_ADMIN' | 'SUPERVISOR' | 'GUARD' | 'CLIENT';
-  guardProfile?: any;
-  clientProfile?: any;
+  guardProfile?: GuardProfile;
+  clientProfile?: ClientProfile;
 }
 
 interface AuthState {

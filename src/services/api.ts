@@ -81,3 +81,17 @@ export const api = {
     });
   }
 };
+
+/**
+ * Formats backend upload paths into fully qualified URLs accessible by the browser.
+ */
+export const getFullImageUrl = (path?: string | null): string => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
+    return path;
+  }
+  const apiHost = process.env.NEXT_PUBLIC_API_URL
+    ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '')
+    : 'http://localhost:5001';
+  return `${apiHost}${path.startsWith('/') ? '' : '/'}${path}`;
+};

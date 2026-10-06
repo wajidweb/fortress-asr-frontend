@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getFullImageUrl } from '@/services/api';
 import { Menu, Search, Bell, Settings } from 'lucide-react';
 
 interface HeaderProps {
@@ -19,7 +20,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { user } = useAuthStore();
 
-  // Translate active client-tabs into clean, British English headings
   const getHeaderTitle = () => {
     switch (activeMenu) {
       case 'client-dash':
@@ -45,23 +45,22 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="h-16 border-b border-slate-100 px-6 flex items-center justify-between select-none bg-white shrink-0">
+    <header className="h-16 border-b border-black/15 px-6 flex items-center justify-between select-none bg-white shrink-0">
       
-      {/* Header Left: Dynamic Title (And Mobile Hamburger menu) */}
+      {/* Header Left: Dynamic Title */}
       <div className="flex items-center gap-3">
-        {/* Toggle Button visible only on Mobile/Tablet viewports */}
         <button 
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="lg:hidden p-1.5 border border-slate-200 rounded-lg text-[#032031] hover:border-black focus:outline-none transition shrink-0"
+          className="lg:hidden p-1.5 border border-black rounded-lg text-black hover:bg-black hover:text-white focus:outline-none transition shrink-0"
         >
           <Menu className="w-4 h-4" />
         </button>
-        <h2 className="text-sm font-black text-[#032031] tracking-tight transition-all duration-300">
+        <h2 className="text-sm font-black text-black tracking-tight transition-all duration-300">
           {getHeaderTitle()}
         </h2>
       </div>
 
-      {/* Header Middle-Right: Premium Pill Search Bar (100% Identical to Guard Header design) */}
+      {/* Header Middle-Right */}
       <div className="flex items-center gap-6">
         
         {/* Search Box */}
@@ -69,39 +68,46 @@ export const Header: React.FC<HeaderProps> = ({
           <input 
             type="text" 
             placeholder="Search here..." 
-            className="w-full pl-9 pr-16 py-1.5 border border-slate-200 rounded-lg text-[10px] font-bold focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031]/10 placeholder-slate-400 bg-white text-black transition-all"
+            className="w-full pl-9 pr-16 py-1.5 border border-black/30 rounded-lg text-[10px] font-bold focus:outline-none focus:border-black focus:ring-1 focus:ring-black placeholder:text-black/40 bg-white text-black transition-all"
           />
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black" />
           <div className="absolute right-2.5 flex items-center gap-1 select-none pointer-events-none">
-            <kbd className="px-1.5 py-0.5 bg-slate-50 border border-slate-200 text-[8px] font-black rounded uppercase text-black leading-none">⌘</kbd>
-            <kbd className="px-1.5 py-0.5 bg-slate-50 border border-slate-200 text-[8px] font-black rounded uppercase text-black leading-none">K</kbd>
+            <kbd className="px-1.5 py-0.5 bg-black/5 border border-black/20 text-[8px] font-black rounded uppercase text-black leading-none">⌘</kbd>
+            <kbd className="px-1.5 py-0.5 bg-black/5 border border-black/20 text-[8px] font-black rounded uppercase text-black leading-none">K</kbd>
           </div>
         </div>
 
-        {/* Header Right Action Icons (Bell & Settings) */}
+        {/* Header Right Action Icons */}
         <div className="flex items-center gap-3">
-          <button className="p-1.5 hover:bg-slate-50 rounded-full text-black transition animate-fade-in">
-            <Bell className="w-4 h-4 text-[#032031]" />
+          <button className="p-1.5 hover:bg-black/5 rounded-full text-black transition animate-fade-in">
+            <Bell className="w-4 h-4 text-black" />
           </button>
           <button 
             onClick={() => setActiveMenu && setActiveMenu('client-profile')}
-            className="p-1.5 hover:bg-slate-50 rounded-full text-black transition animate-fade-in cursor-pointer" 
+            className="p-1.5 hover:bg-black/5 rounded-full text-black transition animate-fade-in cursor-pointer" 
             title="Settings"
           >
-            <Settings className="w-4 h-4 text-[#032031]" />
+            <Settings className="w-4 h-4 text-black" />
           </button>
         </div>
 
-        {/* User Account Info capsule (100% Identical to Guard Header design) */}
+        {/* User Account Info capsule */}
         {user && (
-          <div className="flex items-center gap-2.5 pl-4 border-l border-slate-200">
-            {/* User name in ultra-compact typography */}
+          <div className="flex items-center gap-2.5 pl-4 border-l border-black/20">
             <span className="hidden sm:inline text-[10px] font-bold text-black tracking-tight">
               {user.firstName ? `${user.firstName} ${user.lastName}` : user.email}
             </span>
-            {/* User initials circle */}
-            <div className="w-7 h-7 rounded-full bg-[#032031] text-white font-black flex items-center justify-center text-[10px] tracking-tight shrink-0 border border-black/5 select-none shadow-sm">
-              {getInitials()}
+            <div className="w-7 h-7 rounded-full bg-black text-white font-black flex items-center justify-center text-[10px] tracking-tight shrink-0 border border-black select-none shadow-sm overflow-hidden relative">
+              {user?.clientProfile?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={getFullImageUrl(user.clientProfile.logoUrl)}
+                  alt={user.firstName || 'Client'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                getInitials()
+              )}
             </div>
           </div>
         )}

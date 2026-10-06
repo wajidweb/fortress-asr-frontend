@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { getFullImageUrl } from '@/services/api';
 import { Menu, Search, Bell, Settings, ShieldAlert } from 'lucide-react';
 
 interface HeaderProps {
@@ -121,14 +122,23 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* User Account Info capsule */}
         {user && (
-          <div className="flex items-center gap-2.5 pl-4 border-l border-slate-200">
+          <div className="flex items-center gap-2.5 pl-4 border-l border-black/20">
             {/* User name in ultra-compact typography */}
             <span className="hidden sm:inline text-[10px] font-bold text-black tracking-tight">
               {user.firstName ? `${user.firstName} ${user.lastName}` : user.email}
             </span>
-            {/* User initials circle */}
-            <div className="w-7 h-7 rounded-full bg-[#032031] text-white font-black flex items-center justify-center text-[10px] tracking-tight shrink-0 border border-black/5 select-none shadow-sm">
-              {getInitials()}
+            {/* User avatar circle */}
+            <div className="w-7 h-7 rounded-full bg-black text-white font-black flex items-center justify-center text-[10px] tracking-tight shrink-0 border border-black select-none shadow-sm overflow-hidden relative">
+              {user?.guardProfile?.profilePictureUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={getFullImageUrl(user.guardProfile.profilePictureUrl)}
+                  alt={user.firstName || 'Guard Officer'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                getInitials()
+              )}
             </div>
           </div>
         )}
