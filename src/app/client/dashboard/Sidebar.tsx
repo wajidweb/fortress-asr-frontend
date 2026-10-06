@@ -158,6 +158,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-dob' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
               </button>
+
+              {/* Profile Settings */}
+              <button 
+                onClick={() => setActiveMenu('client-profile')}
+                title="Profile Settings"
+                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
+                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                  ${activeMenu === 'client-profile' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                `}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Settings className="w-3.5 h-3.5 shrink-0" />
+                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                    Profile Settings
+                  </span>
+                </div>
+                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-profile' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+              </button>
             </div>
           </div>
 
@@ -204,10 +222,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="border-t border-white/10 p-3 flex flex-col gap-2 bg-black/10 shrink-0">
         <div className={`flex items-center gap-2.5 transition-all duration-300 overflow-hidden ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}>
           <div className="w-7 h-7 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-            <span className="text-[10px] font-black text-white">{user.firstName[0]}{user.lastName[0]}</span>
+            <span className="text-[10px] font-black text-white">
+              {user.firstName && user.lastName 
+                ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase() 
+                : 'CP'}
+            </span>
           </div>
           <div className={`flex flex-col truncate transition-all duration-300 ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-            <span className="text-[10px] font-black leading-none truncate text-white">{user.firstName} {user.lastName}</span>
+            <span className="text-[10px] font-black leading-none truncate text-white">
+              {user.firstName ? `${user.firstName} ${user.lastName}` : user.email}
+            </span>
             <span className="text-[7px] text-white/50 font-black uppercase mt-1 leading-none tracking-widest">Client Partner</span>
           </div>
         </div>

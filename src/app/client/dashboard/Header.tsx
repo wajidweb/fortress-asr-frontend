@@ -8,12 +8,14 @@ interface HeaderProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   activeMenu: string;
+  setActiveMenu?: (menu: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   isSidebarOpen,
   setIsSidebarOpen,
-  activeMenu
+  activeMenu,
+  setActiveMenu
 }) => {
   const { user } = useAuthStore();
 
@@ -28,14 +30,18 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Occurrence Book';
       case 'client-incidents':
         return 'Incident Reports';
+      case 'client-profile':
+        return 'Profile Settings';
       default:
         return 'Overview Dashboard';
     }
   };
 
   const getInitials = () => {
-    if (!user) return 'SG';
-    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    if (!user) return 'CP';
+    const first = user.firstName ? user.firstName[0] : '';
+    const last = user.lastName ? user.lastName[0] : '';
+    return (first + last).toUpperCase() || 'CP';
   };
 
   return (
@@ -77,7 +83,11 @@ export const Header: React.FC<HeaderProps> = ({
           <button className="p-1.5 hover:bg-slate-50 rounded-full text-black transition animate-fade-in">
             <Bell className="w-4 h-4 text-[#032031]" />
           </button>
-          <button className="p-1.5 hover:bg-slate-50 rounded-full text-black transition animate-fade-in" title="Settings">
+          <button 
+            onClick={() => setActiveMenu && setActiveMenu('client-profile')}
+            className="p-1.5 hover:bg-slate-50 rounded-full text-black transition animate-fade-in cursor-pointer" 
+            title="Settings"
+          >
             <Settings className="w-4 h-4 text-[#032031]" />
           </button>
         </div>
@@ -87,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2.5 pl-4 border-l border-slate-200">
             {/* User name in ultra-compact typography */}
             <span className="hidden sm:inline text-[10px] font-bold text-black tracking-tight">
-              {user.firstName} {user.lastName}
+              {user.firstName ? `${user.firstName} ${user.lastName}` : user.email}
             </span>
             {/* User initials circle */}
             <div className="w-7 h-7 rounded-full bg-[#032031] text-white font-black flex items-center justify-center text-[10px] tracking-tight shrink-0 border border-black/5 select-none shadow-sm">

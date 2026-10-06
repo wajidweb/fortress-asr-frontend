@@ -5,22 +5,21 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { authService } from '@/services/auth.service';
-import { Mail, Eye, EyeOff, ArrowRight, Shield, User, Phone } from 'lucide-react';
+import { Mail, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
 import { useUIStore } from '@/store/useUIStore';
 
 export default function GuardRegisterPage() {
   const router = useRouter();
   const addToast = useUIStore((state) => state.addToast);
   
-  // Form fields
+  // Form fields: Only Email, Password, and Confirm Password
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
     email: '',
-    phoneNumber: '',
     password: '',
+    confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // State to track successful registration
   const [isRegistered, setIsRegistered] = useState(false);
@@ -42,16 +41,6 @@ export default function GuardRegisterPage() {
     const errors: Record<string, string> = {};
     let isValid = true;
 
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required.';
-      isValid = false;
-    }
-
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required.';
-      isValid = false;
-    }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email) {
       errors.email = 'Email address is required.';
@@ -61,19 +50,19 @@ export default function GuardRegisterPage() {
       isValid = false;
     }
 
-    if (!formData.phoneNumber) {
-      errors.phoneNumber = 'Phone number is required.';
-      isValid = false;
-    } else if (formData.phoneNumber.length < 5) {
-      errors.phoneNumber = 'Please enter a valid phone number.';
-      isValid = false;
-    }
-
     if (!formData.password) {
       errors.password = 'Password is required.';
       isValid = false;
     } else if (formData.password.length < 8) {
       errors.password = 'Password must be at least 8 characters long.';
+      isValid = false;
+    }
+
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password.';
+      isValid = false;
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match.';
       isValid = false;
     }
 
@@ -92,7 +81,10 @@ export default function GuardRegisterPage() {
     setLoading(true);
 
     try {
-      await authService.registerGuard(formData);
+      await authService.registerGuard({
+        email: formData.email,
+        password: formData.password,
+      });
       setIsRegistered(true);
     } catch (err: any) {
       let errMsg = '';
@@ -221,47 +213,6 @@ export default function GuardRegisterPage() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               
-              {/* Row: First and Last Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* First Name */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="firstName"
-                      required
-                      placeholder="First Name"
-                      className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.firstName ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
-                      value={formData.firstName}
-                      onChange={handleChange}
-                    />
-                    <User className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
-                  </div>
-                  {validationErrors.firstName && (
-                    <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.firstName}</span>
-                  )}
-                </div>
-
-                {/* Last Name */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="lastName"
-                      required
-                      placeholder="Last Name"
-                      className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.lastName ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
-                      value={formData.lastName}
-                      onChange={handleChange}
-                    />
-                    <User className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
-                  </div>
-                  {validationErrors.lastName && (
-                    <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.lastName}</span>
-                  )}
-                </div>
-              </div>
-
               {/* Email Field with validation */}
               <div className="flex flex-col gap-1.5">
                 <div className="relative">
@@ -278,25 +229,6 @@ export default function GuardRegisterPage() {
                 </div>
                 {validationErrors.email && (
                   <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.email}</span>
-                )}
-              </div>
-
-              {/* Phone Number Field */}
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    required
-                    placeholder="Phone Number"
-                    className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.phoneNumber ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
-                    value={formData.phoneNumber}
-                    onChange={handleChange}
-                  />
-                  <Phone className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
-                </div>
-                {validationErrors.phoneNumber && (
-                  <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.phoneNumber}</span>
                 )}
               </div>
 
@@ -322,6 +254,31 @@ export default function GuardRegisterPage() {
                 </div>
                 {validationErrors.password && (
                   <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.password}</span>
+                )}
+              </div>
+
+              {/* Confirm Password Field with validation */}
+              <div className="flex flex-col gap-1.5">
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    required
+                    placeholder="Confirm Password"
+                    className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.confirmPassword ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 focus:outline-none text-black hover:text-[#032031] transition"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                  </button>
+                </div>
+                {validationErrors.confirmPassword && (
+                  <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.confirmPassword}</span>
                 )}
               </div>
 

@@ -50,7 +50,9 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getInitials = () => {
     if (!user) return 'SG';
-    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    const first = user.firstName ? user.firstName[0] : '';
+    const last = user.lastName ? user.lastName[0] : '';
+    return (first + last).toUpperCase() || 'SG';
   };
 
   return (
@@ -122,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2.5 pl-4 border-l border-slate-200">
             {/* User name in ultra-compact typography */}
             <span className="hidden sm:inline text-[10px] font-bold text-black tracking-tight">
-              {user.firstName} {user.lastName}
+              {user.firstName ? `${user.firstName} ${user.lastName}` : user.email}
             </span>
             {/* User initials circle */}
             <div className="w-7 h-7 rounded-full bg-[#032031] text-white font-black flex items-center justify-center text-[10px] tracking-tight shrink-0 border border-black/5 select-none shadow-sm">

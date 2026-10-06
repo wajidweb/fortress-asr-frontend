@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-white text-black overflow-hidden font-sans antialiased relative">
+    <div className="flex h-screen w-full bg-white text-black overflow-hidden font-jakarta antialiased relative">
       
       {/* Semi-transparent dark blur backdrop overlay for mobile viewports */}
       {isSidebarOpen && (

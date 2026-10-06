@@ -290,7 +290,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
   }
 
   return (
-    <div className="w-full flex flex-col gap-6 animate-fade-in text-black font-sans pb-12 select-none">
+    <div className="w-full flex flex-col gap-6 animate-fade-in text-black font-jakarta pb-12 select-none">
       
       {/* Success / Error Banners */}
       {success && (

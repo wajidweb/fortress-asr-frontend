@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/services/auth.service';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import ProfileSettings from './ProfileSettings';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
 
 export default function ClientDashboard() {
@@ -16,6 +17,8 @@ export default function ClientDashboard() {
   const [hasMounted, setHasMounted] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState('client-dash');
+
+  const isProfileComplete = !!(user?.clientProfile?.companyName);
 
   // Trigger client-only mount
   useEffect(() => {
@@ -45,9 +48,15 @@ export default function ClientDashboard() {
     if (hasMounted) {
       if (!isAuthenticated || !user || user.role !== 'CLIENT') {
         router.push('/login');
+        return;
+      }
+
+      // If client profile is incomplete, route to profile settings
+      if (!isProfileComplete) {
+        setActiveMenu('client-profile');
       }
     }
-  }, [hasMounted, isAuthenticated, user, router]);
+  }, [hasMounted, isAuthenticated, user, isProfileComplete, router]);
 
   if (!hasMounted || !isAuthenticated || !user || user.role !== 'CLIENT') {
     return (
@@ -67,8 +76,33 @@ export default function ClientDashboard() {
     router.push('/login');
   };
 
+  const renderActivePanel = () => {
+    switch (activeMenu) {
+      case 'client-profile':
+        return (
+          <ProfileSettings
+            user={user}
+            updateUser={updateUser}
+            setActiveMenu={setActiveMenu}
+          />
+        );
+      default:
+        return (
+          <div className="w-full flex flex-col gap-4">
+            <div className="bg-white border border-slate-200 rounded-lg p-8 flex flex-col gap-3 shadow-xs">
+              <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Fortress ASR Security Systems</span>
+              <h1 className="text-2xl font-black text-[#032031]">Welcome, {user.firstName || user.clientProfile?.companyName || 'Client Partner'}</h1>
+              <p className="text-xs text-black/70 font-semibold max-w-xl">
+                Your corporate portal provides real-time access to security officers, site inspections, and live incident records.
+              </p>
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
-    <div className="flex h-screen w-full bg-white text-black overflow-hidden font-sans antialiased relative">
+    <div className="flex h-screen w-full bg-white text-black overflow-hidden font-jakarta antialiased relative">
       
       {/* Semi-transparent dark blur backdrop overlay for mobile viewports */}
       {isSidebarOpen && (
@@ -96,12 +130,13 @@ export default function ClientDashboard() {
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
         />
 
-        {/* Content Area - 100% Identical to Guard Dashboard Layout Design */}
+        {/* Content Area */}
         <main className="flex-grow p-6 sm:p-8 overflow-y-auto bg-slate-50/50">
           <div className="w-full h-full flex flex-col">
-            {/* Main workspace is empty - children content panels can be loaded here */}
+            {renderActivePanel()}
           </div>
         </main>
       </div>

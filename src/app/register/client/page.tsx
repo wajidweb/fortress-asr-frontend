@@ -5,24 +5,21 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { authService } from '@/services/auth.service';
-import { Mail, Eye, EyeOff, ArrowRight, Shield, User, Phone, Briefcase, MapPin } from 'lucide-react';
+import { Mail, Eye, EyeOff, ArrowRight, Shield } from 'lucide-react';
 import { useUIStore } from '@/store/useUIStore';
 
 export default function ClientRegisterPage() {
   const router = useRouter();
   const addToast = useUIStore((state) => state.addToast);
   
-  // Form fields (Sourced from Clients table specs, added required billingAddress)
+  // Form fields: Only Email, Password, and Confirm Password
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    companyName: '',
-    billingAddress: '',
     email: '',
-    phoneNumber: '',
     password: '',
+    confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // State to track successful registration
   const [isRegistered, setIsRegistered] = useState(false);
@@ -44,26 +41,6 @@ export default function ClientRegisterPage() {
     const errors: Record<string, string> = {};
     let isValid = true;
 
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required.';
-      isValid = false;
-    }
-
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required.';
-      isValid = false;
-    }
-
-    if (!formData.companyName.trim()) {
-      errors.companyName = 'Company or Site name is required.';
-      isValid = false;
-    }
-
-    if (!formData.billingAddress.trim()) {
-      errors.billingAddress = 'Billing address is required.';
-      isValid = false;
-    }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email) {
       errors.email = 'Email address is required.';
@@ -73,19 +50,19 @@ export default function ClientRegisterPage() {
       isValid = false;
     }
 
-    if (!formData.phoneNumber) {
-      errors.phoneNumber = 'Phone number is required.';
-      isValid = false;
-    } else if (formData.phoneNumber.length < 5) {
-      errors.phoneNumber = 'Please enter a valid phone number.';
-      isValid = false;
-    }
-
     if (!formData.password) {
       errors.password = 'Password is required.';
       isValid = false;
     } else if (formData.password.length < 8) {
       errors.password = 'Password must be at least 8 characters long.';
+      isValid = false;
+    }
+
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password.';
+      isValid = false;
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match.';
       isValid = false;
     }
 
@@ -104,14 +81,17 @@ export default function ClientRegisterPage() {
     setLoading(true);
 
     try {
-      await authService.registerClient(formData);
+      await authService.registerClient({
+        email: formData.email,
+        password: formData.password,
+      });
       setIsRegistered(true);
     } catch (err: any) {
       let errMsg = '';
       if (Array.isArray(err.data?.error)) {
         errMsg = err.data.error.map((e: any) => e.message).join(', ');
       } else {
-        errMsg = err.message || 'Registration failed. This email/company name may already be in use.';
+        errMsg = err.message || 'Registration failed. This email may already be in use.';
       }
       addToast(errMsg, 'error');
     } finally {
@@ -159,13 +139,13 @@ export default function ClientRegisterPage() {
         </div>
 
         {/* Sidebar Copyright Info */}
-        <div className="z-10 text-[10px] text-white/50 font-black tracking-wider uppercase font-sans">
+        <div className="z-10 text-[10px] text-white/50 font-black tracking-wider uppercase">
           Fortress ASR Security Operations Management System.
         </div>
       </div>
 
       {/* RIGHT COLUMN: Fully responsive White, Black & #032031 form container (Strictly NO Grays) */}
-      <div className="w-full lg:w-1/2 bg-white flex flex-col justify-between p-6 sm:p-12 xl:p-16 relative lg:rounded-l-[42px] xl:rounded-l-[56px] shadow-2xl z-20 overflow-y-auto font-sans">
+      <div className="w-full lg:w-1/2 bg-white flex flex-col justify-between p-6 sm:p-12 xl:p-16 relative lg:rounded-l-[42px] xl:rounded-l-[56px] shadow-2xl z-20 overflow-y-auto">
         
         {/* Top Header Row within Form Card - Fully Responsive across small devices */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full">
@@ -233,85 +213,6 @@ export default function ClientRegisterPage() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               
-              {/* Row: First and Last Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* First Name */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="firstName"
-                      required
-                      placeholder="First Name"
-                      className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.firstName ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
-                      value={formData.firstName}
-                      onChange={handleChange}
-                    />
-                    <User className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
-                  </div>
-                  {validationErrors.firstName && (
-                    <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.firstName}</span>
-                  )}
-                </div>
-
-                {/* Last Name */}
-                <div className="flex flex-col gap-1.5">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="lastName"
-                      required
-                      placeholder="Last Name"
-                      className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.lastName ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
-                      value={formData.lastName}
-                      onChange={handleChange}
-                    />
-                    <User className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
-                  </div>
-                  {validationErrors.lastName && (
-                    <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.lastName}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Company Name Field */}
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="companyName"
-                    required
-                    placeholder="Company or Site Name (e.g. House, Shop)"
-                    className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.companyName ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
-                    value={formData.companyName}
-                    onChange={handleChange}
-                  />
-                  <Briefcase className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
-                </div>
-                {validationErrors.companyName && (
-                  <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.companyName}</span>
-                )}
-              </div>
-
-              {/* Billing Address Field (Sourced from Clients table specs) */}
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="billingAddress"
-                    required
-                    placeholder="Billing Address (e.g. 123 Guard Street, London)"
-                    className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.billingAddress ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
-                    value={formData.billingAddress}
-                    onChange={handleChange}
-                  />
-                  <MapPin className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
-                </div>
-                {validationErrors.billingAddress && (
-                  <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.billingAddress}</span>
-                )}
-              </div>
-
               {/* Email Field with validation */}
               <div className="flex flex-col gap-1.5">
                 <div className="relative">
@@ -328,25 +229,6 @@ export default function ClientRegisterPage() {
                 </div>
                 {validationErrors.email && (
                   <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.email}</span>
-                )}
-              </div>
-
-              {/* Phone Number Field */}
-              <div className="flex flex-col gap-1.5">
-                <div className="relative">
-                  <input
-                    type="tel"
-                    name="phoneNumber"
-                    required
-                    placeholder="Phone Number"
-                    className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.phoneNumber ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
-                    value={formData.phoneNumber}
-                    onChange={handleChange}
-                  />
-                  <Phone className="absolute right-5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-black" />
-                </div>
-                {validationErrors.phoneNumber && (
-                  <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.phoneNumber}</span>
                 )}
               </div>
 
@@ -372,6 +254,31 @@ export default function ClientRegisterPage() {
                 </div>
                 {validationErrors.password && (
                   <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.password}</span>
+                )}
+              </div>
+
+              {/* Confirm Password Field with validation */}
+              <div className="flex flex-col gap-1.5">
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    required
+                    placeholder="Confirm Password"
+                    className={`w-full pl-5 pr-12 py-3.5 border ${validationErrors.confirmPassword ? 'border-red-600' : 'border-black'} rounded-full text-sm font-bold placeholder-black bg-white hover:bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#032031]/10 focus:border-[#032031] transition-all duration-200 text-black`}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 focus:outline-none text-black hover:text-[#032031] transition"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                  </button>
+                </div>
+                {validationErrors.confirmPassword && (
+                  <span className="text-red-600 text-[11px] font-black pl-4">{validationErrors.confirmPassword}</span>
                 )}
               </div>
 

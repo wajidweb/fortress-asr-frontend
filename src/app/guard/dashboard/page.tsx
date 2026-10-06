@@ -124,7 +124,7 @@ export default function GuardDashboard() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-white text-black overflow-hidden font-sans antialiased relative">
+    <div className="flex h-screen w-full bg-white text-black overflow-hidden font-jakarta antialiased relative">
       
       {/* Semi-transparent dark blur backdrop overlay for mobile viewports (only clickable if profile is complete) */}
       {isSidebarOpen && isProfileComplete && (

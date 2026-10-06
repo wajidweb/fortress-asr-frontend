@@ -24,6 +24,10 @@ export const authService = {
   updateGuardProfile: async (data: any) => {
     return api.put<{ message: string; user: any }>('/guard/profile', data);
   },
+
+  updateClientProfile: async (data: any) => {
+    return api.put<{ message: string; user: any }>('/client/profile', data);
+  },
   
   forgotPassword: async (data: any) => {
     return api.post<{ message: string }>('/auth/forgot-password', data);
