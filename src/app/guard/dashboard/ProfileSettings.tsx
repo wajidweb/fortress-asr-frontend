@@ -364,7 +364,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
       
       {/* Top Notification Alerts */}
       {success && (
-        <div className="w-full bg-black text-white p-4 rounded-md border-2 border-black flex items-center gap-3 animate-fade-in shadow-sm">
+        <div className="w-full bg-black text-white p-4 rounded-xl border border-black flex items-center gap-3 animate-fade-in shadow-xs">
           <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center shrink-0">
             <Check className="w-4 h-4 stroke-[3]" />
           </div>
@@ -376,7 +376,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
       )}
 
       {error && (
-        <div className="w-full bg-red-50 text-red-700 p-4 rounded-md border-2 border-red-600 flex items-center gap-3 animate-fade-in shadow-sm">
+        <div className="w-full bg-red-50 text-red-700 p-4 rounded-xl border border-red-300 flex items-center gap-3 animate-fade-in shadow-xs">
           <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0">
             <AlertCircle className="w-4 h-4" />
           </div>
@@ -388,10 +388,10 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
       )}
 
       {/* Main Full-Width Form Container */}
-      <form onSubmit={handleSaveProfile} className="w-full bg-white border-2 border-black rounded-lg p-6 sm:p-10 flex flex-col gap-8 shadow-sm">
+      <form onSubmit={handleSaveProfile} className="w-full bg-white border border-black rounded-xl p-6 sm:p-10 flex flex-col gap-8 shadow-xs">
         
         {/* Header Block with Proper Black Accents */}
-        <div className="w-full border-b-2 border-black pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="w-full border-b border-black/20 pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-black uppercase tracking-widest text-black">
               Fortress ASR Security Systems • Officer Portal
@@ -439,7 +439,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 pt-1">
               {/* Avatar Box with Proper Black Border */}
-              <div className="w-24 h-24 rounded-lg bg-black/5 border-2 border-black flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner">
+              <div className="w-24 h-24 rounded-xl bg-black/5 border border-black flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner">
                 {photoPreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -748,7 +748,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
               <button
                 type="button"
                 onClick={() => rtwFileInputRef.current?.click()}
-                className="px-5 py-2.5 border-2 border-black bg-white hover:bg-black hover:text-white text-black rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition cursor-pointer"
+                className="px-5 py-2.5 border border-black bg-white hover:bg-black hover:text-white text-black rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>{selectedFileName ? 'Change Document File' : (formData.rtwDocumentUrl ? 'Replace Scan Document' : 'Upload Document Scan')}</span>
@@ -772,7 +772,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
         </div>
 
         {/* Bottom Submission Bar */}
-        <div className="w-full pt-6 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="w-full pt-6 border-t border-black/20 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-black text-[10px] font-bold">
             <ShieldCheck className="w-4 h-4 text-black shrink-0" />
             <span>Compliance credentials and officer documentation are cryptographically secured and audited.</span>

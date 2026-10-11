@@ -493,7 +493,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
           <button
             onClick={handleRefresh}
             disabled={loading || isRefreshing}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 border-2 border-black/20 hover:border-black text-[#032031] hover:bg-black/5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-50 active:scale-[0.98] shrink-0"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 border border-black hover:border-black text-[#032031] hover:bg-black/5 text-[10px] sm:text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-50 active:scale-[0.98] shrink-0"
             title="Refresh service requests with latest data"
           >
             <RotateCw className={`w-3.5 h-3.5 text-[#032031] ${isRefreshing || loading ? 'animate-spin' : ''}`} />
@@ -517,7 +517,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card 1: Total Requests */}
-        <div className="bg-white border-2 border-black rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition">
+        <div className="bg-white border border-black rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-black/60">
               Total Requests
@@ -532,7 +532,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
         </div>
 
         {/* Card 2: Pending Review */}
-        <div className="bg-white border-2 border-amber-500 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-amber-50/60 to-white">
+        <div className="bg-white border border-amber-300 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-amber-50/60 to-white">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-amber-800">
               Pending Review
@@ -547,7 +547,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
         </div>
 
         {/* Card 3: Under Assessment */}
-        <div className="bg-white border-2 border-blue-500 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-blue-50/60 to-white">
+        <div className="bg-white border border-blue-300 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-blue-50/60 to-white">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-blue-800">
               Under Assessment
@@ -562,7 +562,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
         </div>
 
         {/* Card 4: Approved & Deployed */}
-        <div className="bg-white border-2 border-emerald-500 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-emerald-50/60 to-white">
+        <div className="bg-white border border-emerald-300 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-emerald-50/60 to-white">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
               Approved & Deployed
@@ -579,7 +579,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
       </div>
 
       {/* 3. Table & Controls Card */}
-      <div className="bg-white border-2 border-black rounded-xl flex flex-col overflow-hidden shadow-xs">
+      <div className="bg-white border border-black rounded-xl flex flex-col overflow-hidden shadow-xs">
         
         {/* Controls Bar */}
         <div className="p-4 border-b border-black/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-zinc-50/70">
@@ -861,7 +861,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
       {/* 5. SECURITY DEPLOYMENT REQUEST MODAL - PLATFORM BRAND SYSTEM */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border-2 border-black/15 overflow-hidden">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-black overflow-hidden">
             
             {/* Modal Header */}
             <div className="px-6 sm:px-8 py-5 border-b border-black/10 flex items-center justify-between shrink-0 bg-white">
@@ -1083,7 +1083,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
                             onClick={() => setFormData({ ...formData, urgency: item.id as any })}
                             className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-0.5 ${
                               isSelected
-                                ? 'border-2 border-[#032031] bg-[#032031] text-white shadow-xs'
+                                ? 'border border-[#032031] bg-[#032031] text-white shadow-xs'
                                 : 'border border-black/20 hover:border-black/50 bg-white text-black'
                             }`}
                           >
@@ -1361,7 +1361,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
       {/* 6. REDESIGNED COMPREHENSIVE REQUEST DETAILS MODAL (max-w-4xl, Fully Responsive) */}
       {selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border-2 border-black/15 rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-white border border-black rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             
             {/* Header */}
             <div className="px-6 sm:px-8 py-5 border-b border-black/10 flex items-center justify-between bg-zinc-50 shrink-0">
@@ -1403,7 +1403,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
               <div className="lg:col-span-6 flex flex-col gap-4">
                 
                 {/* Status & Lifecycle Card */}
-                <div className="p-4 rounded-xl border-2 border-black/10 bg-black/[0.02] flex flex-col gap-3">
+                <div className="p-4 rounded-xl border border-black/15 bg-black/[0.02] flex flex-col gap-3">
                   <div className="flex items-center justify-between border-b border-black/10 pb-2.5">
                     <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Request Status</span>
                     <div>{getStatusBadge(selectedRequest.status)}</div>
@@ -1494,7 +1494,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
                 
                 {/* Security Operations / Control Room Review Card */}
                 {(selectedRequest.adminFeedbackNotes || selectedRequest.status === 'APPROVED') && (
-                  <div className="border-2 border-black/15 rounded-xl p-4 bg-zinc-50 flex flex-col gap-3 shadow-2xs">
+                  <div className="border border-black/15 rounded-xl p-4 bg-zinc-50 flex flex-col gap-3 shadow-2xs">
                     <div className="flex items-center justify-between border-b border-black/10 pb-2">
                       <span className="text-[10px] font-black uppercase tracking-wider text-[#032031] flex items-center gap-1.5">
                         <Shield className="w-3.5 h-3.5 text-[#032031]" />
@@ -1614,7 +1614,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
                       setSelectedRequest(null);
                       handleOpenEditModal(reqToEdit);
                     }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 border-2 border-black/25 hover:border-black text-[#032031] hover:bg-black/5 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 border border-black hover:bg-black/5 text-[#032031] rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer"
                   >
                     <Pencil className="w-3.5 h-3.5 text-[#032031]" />
                     Edit Request
@@ -1644,7 +1644,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
       {/* 7. DEDICATED CANCELLATION CONFIRMATION MODAL */}
       {isCancelModalOpen && requestToCancel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border-2 border-black/15 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col">
+          <div className="bg-white border border-black rounded-2xl max-w-md w-full shadow-2xl overflow-hidden flex flex-col">
             
             {/* Header */}
             <div className="px-6 py-5 border-b border-black/10 flex items-center justify-between bg-zinc-50 shrink-0">

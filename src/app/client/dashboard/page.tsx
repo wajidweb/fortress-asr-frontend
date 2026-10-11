@@ -92,7 +92,7 @@ export default function ClientDashboard() {
     if (!isProfileComplete) {
       return (
         <div className="w-full flex flex-col gap-6 animate-fade-in">
-          <div className="w-full bg-amber-50 border-2 border-amber-500 rounded-lg p-5 flex items-start gap-3.5 shadow-xs">
+          <div className="w-full bg-amber-50 border border-amber-400 rounded-xl p-5 flex items-start gap-3.5 shadow-xs">
             <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function ClientDashboard() {
       default:
         return (
           <div className="w-full flex flex-col gap-6 animate-fade-in">
-            <div className="bg-white border-2 border-black rounded-lg p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
+            <div className="bg-white border border-black rounded-xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
               <div className="flex flex-col gap-2 max-w-xl">
                 <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Fortress ASR Security Systems</span>
                 <h1 className="text-2xl font-black text-[#032031]">Welcome, {user.firstName || user.clientProfile?.companyName || 'Corporate Client'}</h1>
@@ -159,7 +159,7 @@ export default function ClientDashboard() {
                 </button>
                 <button
                   onClick={() => setActiveMenu('client-sites')}
-                  className="px-4 py-2.5 border-2 border-black text-black text-[11px] font-black uppercase tracking-wider rounded-lg hover:bg-black/5 transition cursor-pointer"
+                  className="px-4 py-2.5 border border-black text-black text-[11px] font-black uppercase tracking-wider rounded-lg hover:bg-black/5 transition cursor-pointer"
                 >
                   View Monitored Sites
                 </button>
