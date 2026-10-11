@@ -224,7 +224,83 @@ export const adminService = {
   updateSite: (id: string, payload: Partial<ApproveSiteRequestPayload> & { name?: string; address?: string }) => {
     return api.put<{ message: string; site: AdminSite }>(`/admin/sites/${id}`, payload);
   },
+
+  // Fetch encrypted audit logs with filters, multi-field search & pagination
+  getAuditLogs: (params?: AuditLogFilterParams) => {
+    const query = new URLSearchParams();
+    if (params?.entityType && params.entityType !== 'ALL') query.append('entityType', params.entityType);
+    if (params?.action && params.action !== 'ALL') query.append('action', params.action);
+    if (params?.search && params.search.trim() !== '') query.append('search', params.search.trim());
+    if (params?.userId) query.append('userId', params.userId);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.export) query.append('export', 'true');
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<{
+      logs: AdminAuditLog[];
+      pagination: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
+      stats: {
+        total: number;
+        guards: number;
+        clients: number;
+        sites: number;
+        requests: number;
+        shifts: number;
+      };
+    }>(`/admin/audit-logs${qs}`);
+  },
+
+  // Fetch single decrypted audit log by ID
+  getAuditLogById: (id: string) => {
+    return api.get<{ log: AdminAuditLog }>(`/admin/audit-logs/${id}`);
+  },
 };
+
+export interface AdminAuditLog {
+  id: string;
+  userId: string | null;
+  action: string;
+  entityType: 'GUARD' | 'CLIENT' | 'SITE' | 'SERVICE_REQUEST' | 'SHIFT' | 'USER' | 'SYSTEM' | string | null;
+  entityId: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  details: {
+    entityName?: string | null;
+    summary?: string | null;
+    previousValues?: Record<string, any> | null;
+    newValues?: Record<string, any> | null;
+    reason?: string | null;
+    metadata?: Record<string, any> | null;
+    [key: string]: any;
+  };
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  } | null;
+}
+
+export interface AuditLogFilterParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  entityType?: string;
+  action?: string;
+  userId?: string;
+  startDate?: string;
+  endDate?: string;
+  export?: boolean;
+}
 
 export type ServiceRequestType = 'NEW_SITE_DEPLOYMENT' | 'EXTRA_GUARD_COVERAGE' | 'SCHEDULE_CHANGE' | 'SPECIAL_EVENT';
 export type ServiceRequestStatus = 'PENDING_REVIEW' | 'UNDER_ASSESSMENT' | 'APPROVED' | 'REJECTED' | 'CANCELLED';

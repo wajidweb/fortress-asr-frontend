@@ -8,6 +8,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/services/auth.service';
 import { Mail, Eye, EyeOff, Shield } from 'lucide-react';
 import { useUIStore } from '@/store/useUIStore';
+import LoaderRectangle from '@/components/ui/LoaderRectangle';
 
 function LoginForm() {
   const router = useRouter();
@@ -133,8 +134,8 @@ function LoginForm() {
   // Prevent showing login form while redirecting authenticated users
   if (isAuthenticated && user) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-[#032031] font-black text-sm uppercase tracking-wider">
-        Redirecting to secure gateway...
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <LoaderRectangle />
       </div>
     );
   }

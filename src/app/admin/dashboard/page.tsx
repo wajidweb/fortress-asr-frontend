@@ -11,6 +11,7 @@ import GuardManagement from './GuardManagement';
 import ClientManagement from './ClientManagement';
 import SiteRequestsManagement from './SiteRequestsManagement';
 import SiteManagement from './SiteManagement';
+import AuditLogsManagement from './AuditLogsManagement';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -114,6 +115,7 @@ export default function AdminDashboard() {
           {activeMenu === 'sites-dash' && (
             <SiteManagement onNavigateToRequests={() => setActiveMenu('admin-requests')} />
           )}
+          {activeMenu === 'audit-logs' && <AuditLogsManagement />}
           {activeMenu === 'admin-dash' && (
             <div className="w-full flex flex-col gap-6">
               <div className="w-full bg-white border-2 border-black rounded-lg p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
@@ -136,6 +138,12 @@ export default function AdminDashboard() {
                     className="px-4 py-2.5 border-2 border-black text-black text-[11px] font-black uppercase tracking-wider rounded-lg hover:bg-black/5 transition cursor-pointer"
                   >
                     Manage Properties
+                  </button>
+                  <button
+                    onClick={() => setActiveMenu('audit-logs')}
+                    className="px-4 py-2.5 border-2 border-[#032031] bg-black/5 text-[#032031] text-[11px] font-black uppercase tracking-wider rounded-lg hover:bg-[#032031] hover:text-white transition cursor-pointer"
+                  >
+                    Audit Trail
                   </button>
                 </div>
               </div>
