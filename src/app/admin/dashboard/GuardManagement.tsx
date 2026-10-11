@@ -217,7 +217,7 @@ export const GuardManagement: React.FC = () => {
       
       {/* Top Banners */}
       {success && (
-        <div className="w-full bg-black text-white p-4 rounded-md border-2 border-black flex items-center gap-3 animate-fade-in shadow-sm">
+        <div className="w-full bg-black text-white p-4 rounded-xl border border-black flex items-center gap-3 animate-fade-in shadow-xs">
           <div className="w-6 h-6 rounded-full bg-white text-black flex items-center justify-center shrink-0">
             <CheckCircle2 className="w-4 h-4 stroke-[3]" />
           </div>
@@ -229,7 +229,7 @@ export const GuardManagement: React.FC = () => {
       )}
 
       {error && (
-        <div className="w-full bg-red-50 text-red-700 p-4 rounded-md border-2 border-red-600 flex items-center gap-3 animate-fade-in shadow-sm">
+        <div className="w-full bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 flex items-center gap-3 animate-fade-in shadow-xs">
           <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0">
             <AlertCircle className="w-4 h-4" />
           </div>
@@ -241,10 +241,10 @@ export const GuardManagement: React.FC = () => {
       )}
 
       {/* Main Container */}
-      <div className="w-full bg-white border-2 border-black rounded-lg p-6 sm:p-8 flex flex-col gap-6 shadow-sm">
+      <div className="w-full bg-white border border-black rounded-xl p-6 sm:p-8 flex flex-col gap-6 shadow-xs">
         
         {/* Header Block */}
-        <div className="w-full border-b-2 border-black pb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="w-full border-b border-black/20 pb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-black uppercase tracking-widest text-black">
               Fortress ASR Security Systems • Headquarters Operations
@@ -261,14 +261,14 @@ export const GuardManagement: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={loading || isRefreshing}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-black hover:bg-black/5 text-black text-[10px] font-black uppercase tracking-wider rounded-sm transition shadow-2xs cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-black hover:bg-black/5 text-black text-[10px] font-black uppercase tracking-wider rounded-lg transition shadow-2xs cursor-pointer disabled:opacity-50"
               title="Refresh officer records"
             >
               <RotateCw className={`w-3.5 h-3.5 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </button>
 
-            <span className="px-3 py-1.5 bg-black text-white rounded-sm text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5">
+            <span className="px-3 py-1.5 bg-black text-white rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
               <span>Total Officers: {pagination.total}</span>
             </span>
@@ -276,7 +276,7 @@ export const GuardManagement: React.FC = () => {
         </div>
 
         {/* Tab Bar & Search Row */}
-        <div className="w-full flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 border-b border-black/15 pb-4">
+        <div className="w-full flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4 border-b border-black/20 pb-4">
           
           {/* Tabs */}
           <div className="flex flex-wrap items-center gap-2">
@@ -285,7 +285,7 @@ export const GuardManagement: React.FC = () => {
                 setActiveTab('ALL');
                 setPage(1);
               }}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition duration-200 flex items-center gap-2 cursor-pointer
                 ${activeTab === 'ALL' 
                   ? 'bg-black text-white shadow-xs' 
                   : 'bg-white text-black border border-black hover:bg-black/5'
@@ -306,7 +306,7 @@ export const GuardManagement: React.FC = () => {
                 setActiveTab('PENDING_APPROVAL');
                 setPage(1);
               }}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition duration-200 flex items-center gap-2 cursor-pointer
                 ${activeTab === 'PENDING_APPROVAL' 
                   ? 'bg-black text-white shadow-xs' 
                   : 'bg-white text-black border border-black hover:bg-black/5'
@@ -327,7 +327,7 @@ export const GuardManagement: React.FC = () => {
                 setActiveTab('ACTIVE');
                 setPage(1);
               }}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition duration-200 flex items-center gap-2 cursor-pointer
                 ${activeTab === 'ACTIVE' 
                   ? 'bg-black text-white shadow-xs' 
                   : 'bg-white text-black border border-black hover:bg-black/5'
@@ -348,7 +348,7 @@ export const GuardManagement: React.FC = () => {
                 setActiveTab('SUSPENDED');
                 setPage(1);
               }}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-lg transition duration-200 flex items-center gap-2 cursor-pointer
                 ${activeTab === 'SUSPENDED' 
                   ? 'bg-black text-white shadow-xs' 
                   : 'bg-white text-black border border-black hover:bg-black/5'
@@ -373,7 +373,7 @@ export const GuardManagement: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search name, SIA badge, or email..."
-              className="w-full pl-10 pr-4 py-2 border border-black rounded-md text-xs font-bold text-black bg-white focus:outline-none focus:ring-2 focus:ring-black placeholder:text-black/40 transition"
+              className="w-full pl-10 pr-4 py-2 border border-black rounded-lg text-xs font-bold text-black bg-white focus:outline-none focus:ring-1 focus:ring-black placeholder:text-black/40 transition"
             />
           </div>
 
@@ -386,7 +386,7 @@ export const GuardManagement: React.FC = () => {
             <span>Loading Officer Roster Records...</span>
           </div>
         ) : filteredGuards.length === 0 ? (
-          <div className="w-full border-2 border-dashed border-black/30 rounded-lg p-14 flex flex-col items-center justify-center text-center gap-3">
+          <div className="w-full border border-dashed border-black/40 rounded-xl p-14 flex flex-col items-center justify-center text-center gap-3">
             <div className="w-12 h-12 rounded-full bg-black/5 border border-black flex items-center justify-center text-black">
               <Users className="w-6 h-6" />
             </div>
@@ -405,7 +405,7 @@ export const GuardManagement: React.FC = () => {
               return (
                 <div 
                   key={guard.id}
-                  className="w-full border-2 border-black rounded-lg p-5 sm:p-6 bg-white hover:shadow-md transition flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 group"
+                  className="w-full border border-black rounded-xl p-5 sm:p-6 bg-white hover:shadow-xs transition flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 group"
                 >
                   
                   {/* Left: Avatar & Officer Info - Clickable to open modal */}
@@ -416,7 +416,7 @@ export const GuardManagement: React.FC = () => {
                   >
                     
                     {/* Guard Photo Avatar with right-side spacing */}
-                    <div className="w-16 h-16 rounded-lg bg-black/5 border-2 border-black flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner group-hover:scale-105 transition mr-2 sm:mr-3">
+                    <div className="w-16 h-16 rounded-xl bg-black/5 border border-black flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner group-hover:scale-105 transition mr-2 sm:mr-3">
                       {guard.profilePictureUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img 
@@ -525,7 +525,7 @@ export const GuardManagement: React.FC = () => {
                     {/* View Details Button */}
                     <button
                       onClick={() => setSelectedGuard(guard)}
-                      className="px-3.5 py-2.5 border-2 border-black bg-white hover:bg-black/5 text-black rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
+                      className="px-3.5 py-2.5 border border-black hover:bg-black/5 text-black rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer"
                       title="View full officer details"
                     >
                       <Eye className="w-3.5 h-3.5" />
@@ -536,7 +536,7 @@ export const GuardManagement: React.FC = () => {
                       <button
                         onClick={() => handleApprove(guard.id, displayName)}
                         disabled={isActionLoading}
-                        className="px-4 py-2.5 bg-black hover:bg-black/85 text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
+                        className="px-4 py-2.5 bg-black hover:bg-black/85 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
                       >
                         <UserCheck className="w-3.5 h-3.5" />
                         <span>{isActionLoading ? 'Processing...' : 'Pass / Approve'}</span>
@@ -547,7 +547,7 @@ export const GuardManagement: React.FC = () => {
                       <button
                         onClick={() => handleReject(guard.id, displayName)}
                         disabled={isActionLoading}
-                        className="px-4 py-2.5 border-2 border-black text-black hover:bg-black hover:text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                        className="px-4 py-2.5 border border-black hover:bg-black hover:text-white text-black rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
                       >
                         <Ban className="w-3.5 h-3.5" />
                         <span>{isActionLoading ? 'Processing...' : 'Reject / Lock'}</span>
@@ -564,7 +564,7 @@ export const GuardManagement: React.FC = () => {
 
         {/* Proper Responsive Pagination Bar */}
         {!loading && guards.length > 0 && (
-          <div className="pt-4 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between gap-4 bg-white text-xs font-bold">
+          <div className="pt-4 border-t border-black/20 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white text-xs font-bold">
             
             {/* Entries Indicator & Rows selector */}
             <div className="flex items-center gap-3">
@@ -691,7 +691,7 @@ export const GuardManagement: React.FC = () => {
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
                     
                     {/* Guard Photo Avatar */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-zinc-100 border-2 border-black/15 flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-zinc-100 border border-black/15 flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative">
                       {selectedGuard.profilePictureUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -1161,7 +1161,7 @@ export const GuardManagement: React.FC = () => {
                         await handleReject(selectedGuard.id, modalDisplayName);
                       }}
                       disabled={isActionLoading}
-                      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-red-500 hover:border-red-600 text-red-600 hover:bg-red-50 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+                      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-red-300 hover:border-red-600 text-red-600 hover:bg-red-50 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
                     >
                       <Ban className="w-4 h-4" />
                       <span>{isActionLoading ? 'Processing...' : 'Suspend Officer'}</span>

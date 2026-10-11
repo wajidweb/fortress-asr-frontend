@@ -188,7 +188,7 @@ export const AuditLogsManagement: React.FC = () => {
     <div className="w-full flex flex-col gap-5 text-black font-jakarta pb-12 select-none animate-fade-in">
       
       {/* 1. Header Section */}
-      <div className="w-full bg-white border border-black/10 rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+      <div className="w-full bg-white border border-black rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <span className="text-[9px] font-black uppercase tracking-widest text-black">
@@ -227,7 +227,7 @@ export const AuditLogsManagement: React.FC = () => {
       </div>
 
       {/* 2. Main Container: Filters + Logs */}
-      <div className="w-full bg-white border border-black/10 rounded-xl p-4 sm:p-6 flex flex-col gap-4 shadow-xs">
+      <div className="w-full bg-white border border-black rounded-xl p-4 sm:p-6 flex flex-col gap-4 shadow-xs">
         
         {/* Filter Toolbar */}
         <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between pb-3 border-b border-black/[0.08]">
@@ -242,7 +242,7 @@ export const AuditLogsManagement: React.FC = () => {
                 setPage(1);
               }}
               placeholder="Search by action, administrator, target, or details..."
-              className="w-full pl-9 pr-8 py-2 border border-black/20 rounded-lg text-xs font-semibold focus:outline-none focus:border-black text-black placeholder:text-black/60 bg-white"
+              className="w-full pl-9 pr-8 py-2 border border-black rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-black text-black placeholder:text-black/60 bg-white"
             />
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black" />
             {searchQuery && (
@@ -265,7 +265,7 @@ export const AuditLogsManagement: React.FC = () => {
                 setActionFilter(e.target.value);
                 setPage(1);
               }}
-              className="px-2.5 py-2 border border-black/20 rounded-lg text-xs font-bold bg-white text-black focus:outline-none cursor-pointer"
+              className="px-2.5 py-2 border border-black rounded-lg text-xs font-bold bg-white text-black focus:outline-none cursor-pointer"
             >
               <option value="ALL">All Actions</option>
               <option value="GUARD_APPROVED">Guard Approved</option>
@@ -279,7 +279,7 @@ export const AuditLogsManagement: React.FC = () => {
             </select>
 
             {/* Date Pickers */}
-            <div className="flex items-center gap-1.5 bg-white border border-black/20 rounded-lg px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 bg-white border border-black rounded-lg px-2.5 py-1.5">
               <Calendar className="w-3.5 h-3.5 text-black shrink-0" />
               <input
                 type="date"
@@ -332,7 +332,7 @@ export const AuditLogsManagement: React.FC = () => {
             </span>
           </div>
         ) : logs.length === 0 ? (
-          <div className="py-16 border border-dashed border-black/20 rounded-xl flex flex-col items-center justify-center gap-2.5 text-center p-6">
+          <div className="py-16 border border-dashed border-black/40 rounded-xl flex flex-col items-center justify-center gap-2.5 text-center p-6">
             <Clock className="w-8 h-8 text-black" />
             <h3 className="text-sm font-black text-black uppercase tracking-wider">No Audit Records Found</h3>
             <p className="text-xs text-black font-semibold max-w-sm">
@@ -350,7 +350,7 @@ export const AuditLogsManagement: React.FC = () => {
         ) : (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto border border-black/10 rounded-xl">
+            <div className="hidden md:block overflow-x-auto border border-black rounded-xl">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-[#032031] text-white text-[9px] font-black uppercase tracking-wider">
@@ -469,7 +469,7 @@ export const AuditLogsManagement: React.FC = () => {
                   <div
                     key={log.id}
                     onClick={() => setSelectedLog(log)}
-                    className="p-3.5 bg-white border border-black/15 rounded-xl flex flex-col gap-2.5 shadow-2xs hover:border-black transition cursor-pointer text-black"
+                    className="p-3.5 bg-white border border-black rounded-xl flex flex-col gap-2.5 shadow-2xs hover:shadow-xs transition cursor-pointer text-black"
                   >
                     {/* Top Row: Action & Date */}
                     <div className="flex items-center justify-between gap-2">
@@ -576,7 +576,7 @@ export const AuditLogsManagement: React.FC = () => {
       {/* 5. Redesigned Premium View Log Modal */}
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/50 backdrop-blur-xs animate-fade-in">
-          <div className="w-full max-w-2xl max-h-[92vh] bg-white border border-black/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up text-black">
+          <div className="w-full max-w-2xl max-h-[92vh] bg-white border border-black rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up text-black">
             
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-[#032031] to-[#052e46] text-white p-5 sm:p-6 flex items-start justify-between border-b border-white/10 shrink-0">
@@ -765,7 +765,7 @@ export const AuditLogsManagement: React.FC = () => {
                           return (
                             <div 
                               key={key} 
-                              className="border border-black/10 rounded-xl p-3 bg-white flex flex-col gap-2 shadow-2xs"
+                              className="border border-black rounded-xl p-3 bg-white flex flex-col gap-2 shadow-2xs"
                             >
                               {/* Field Name */}
                               <div className="flex items-center justify-between">

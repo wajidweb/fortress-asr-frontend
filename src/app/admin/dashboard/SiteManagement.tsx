@@ -117,7 +117,7 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
     <div className="w-full flex flex-col gap-6 animate-fade-in select-none">
       
       {/* Top Banner */}
-      <div className="w-full bg-white border-2 border-black rounded-lg p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
+      <div className="w-full bg-white border border-black rounded-xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
         <div className="flex flex-col gap-2 max-w-2xl">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Infrastructure & Properties</span>
@@ -142,25 +142,25 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border-2 border-black rounded-lg p-4 flex flex-col gap-1 shadow-xs">
+        <div className="bg-white border border-black rounded-xl p-4 flex flex-col gap-1 shadow-xs">
           <span className="text-[9px] font-black uppercase tracking-wider text-black/50">Active Properties</span>
           <span className="text-2xl font-black text-[#032031]">{sites.length}</span>
         </div>
-        <div className="bg-white border-2 border-emerald-500/80 rounded-lg p-4 flex flex-col gap-1 shadow-xs bg-emerald-50/20">
+        <div className="bg-white border border-emerald-300 rounded-xl p-4 flex flex-col gap-1 shadow-xs bg-emerald-50/20">
           <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700">Officers On Duty Now</span>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-black text-emerald-700">{totalActiveOfficers}</span>
             {totalActiveOfficers > 0 && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />}
           </div>
         </div>
-        <div className="bg-white border-2 border-blue-500/80 rounded-lg p-4 flex flex-col gap-1 shadow-xs bg-blue-50/20">
+        <div className="bg-white border border-blue-300 rounded-xl p-4 flex flex-col gap-1 shadow-xs bg-blue-50/20">
           <span className="text-[9px] font-black uppercase tracking-wider text-blue-700">Perimeter Status</span>
           <span className="text-2xl font-black text-blue-700">Active & Calibrated</span>
         </div>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white border-2 border-black rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+      <div className="bg-white border border-black rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
@@ -179,12 +179,12 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
 
       {/* Sites Grid */}
       {loading ? (
-        <div className="py-24 flex flex-col items-center justify-center gap-4 bg-white border-2 border-black rounded-lg shadow-xs">
+        <div className="py-24 flex flex-col items-center justify-center gap-4 bg-white border border-black rounded-xl shadow-xs">
           <LoaderRectangle />
           <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Loading properties registry...</span>
         </div>
       ) : filteredSites.length === 0 ? (
-        <div className="py-20 flex flex-col items-center justify-center text-center px-4 gap-3 bg-white border-2 border-black rounded-lg shadow-xs">
+        <div className="py-20 flex flex-col items-center justify-center text-center px-4 gap-3 bg-white border border-black rounded-xl shadow-xs">
           <Building2 className="w-10 h-10 text-black/20" />
           <h3 className="text-sm font-black text-black uppercase tracking-wider">No properties found</h3>
           <p className="text-xs text-black/60 max-w-md font-medium">
@@ -199,7 +199,7 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
           {filteredSites.map((site) => (
             <div 
               key={site.id} 
-              className="bg-white border-2 border-black rounded-xl p-5 flex flex-col justify-between gap-5 shadow-xs hover:border-black hover:shadow-md transition group"
+              className="bg-white border border-black rounded-xl p-5 flex flex-col justify-between gap-5 shadow-xs hover:border-black hover:shadow-md transition group"
             >
               
               {/* Header */}
@@ -260,7 +260,7 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
       {/* EDIT MODAL */}
       {editingSite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border-2 border-black rounded-xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+          <div className="bg-white border border-black rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
             
             <div className="px-6 py-4 border-b border-black/10 flex items-center justify-between sticky top-0 bg-white z-10">
               <div className="flex items-center gap-2">

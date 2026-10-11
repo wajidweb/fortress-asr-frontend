@@ -547,7 +547,7 @@ export const SiteRequestsManagement: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={loading || isRefreshing}
-            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2.5 border-2 border-black/20 hover:border-black text-[#032031] hover:bg-black/5 text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-2.5 border border-black hover:bg-black/5 text-[#032031] text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-2xs cursor-pointer disabled:opacity-50 active:scale-[0.98]"
             title="Refresh requests with latest operational data"
           >
             <RotateCw className={`w-3.5 h-3.5 text-[#032031] shrink-0 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
@@ -557,7 +557,7 @@ export const SiteRequestsManagement: React.FC = () => {
           {/* Print Report */}
           <button
             onClick={handlePrintReport}
-            className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 border-2 border-black/25 hover:border-black text-[#032031] text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition hover:bg-black/5 cursor-pointer shadow-2xs active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-1.5 px-3 sm:px-3.5 py-2.5 border border-black text-[#032031] text-[10px] sm:text-xs font-black uppercase tracking-wider rounded-xl transition hover:bg-black/5 cursor-pointer shadow-2xs active:scale-[0.98]"
             title={selectedIds.length > 0 ? `Print ${selectedIds.length} selected requests` : "Print formatted report"}
           >
             <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#032031] shrink-0" />
@@ -591,7 +591,7 @@ export const SiteRequestsManagement: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card 1: Total Requests */}
-        <div className="bg-white border-2 border-black rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition">
+        <div className="bg-white border border-black rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-black/60">
               Total Requests
@@ -606,7 +606,7 @@ export const SiteRequestsManagement: React.FC = () => {
         </div>
 
         {/* Card 2: Pending Review */}
-        <div className="bg-white border-2 border-amber-500 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-amber-50/60 to-white">
+        <div className="bg-white border border-amber-300 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-amber-50/60 to-white">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-amber-800">
               Pending Review
@@ -621,7 +621,7 @@ export const SiteRequestsManagement: React.FC = () => {
         </div>
 
         {/* Card 3: Under Assessment */}
-        <div className="bg-white border-2 border-blue-500 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-blue-50/60 to-white">
+        <div className="bg-white border border-blue-300 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-blue-50/60 to-white">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-blue-800">
               Under Assessment
@@ -636,7 +636,7 @@ export const SiteRequestsManagement: React.FC = () => {
         </div>
 
         {/* Card 4: Approved & Deployed */}
-        <div className="bg-white border-2 border-emerald-500 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-emerald-50/60 to-white">
+        <div className="bg-white border border-emerald-300 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-emerald-50/60 to-white">
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
               Approved & Deployed
@@ -653,7 +653,7 @@ export const SiteRequestsManagement: React.FC = () => {
       </div>
 
       {/* 3. Table & Controls Card */}
-      <div className="bg-white border-2 border-black rounded-xl flex flex-col overflow-hidden shadow-xs">
+      <div className="bg-white border border-black rounded-xl flex flex-col overflow-hidden shadow-xs">
         
         {/* Controls Bar */}
         <div className="p-4 border-b border-black/10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-zinc-50/70">
@@ -991,7 +991,7 @@ export const SiteRequestsManagement: React.FC = () => {
       {/* 5. REDESIGNED ADMIN DEPLOYMENT REVIEW & APPROVAL MODAL (max-w-5xl, Fully Responsive) */}
       {isDeployModalOpen && selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border-2 border-black/15 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-white border border-black rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-black/10 flex items-center justify-between bg-zinc-50 shrink-0">
@@ -1027,7 +1027,7 @@ export const SiteRequestsManagement: React.FC = () => {
               <div className="lg:col-span-6 flex flex-col gap-4">
                 
                 {/* Client Profile Capsule */}
-                <div className="p-4 rounded-xl border-2 border-black/10 bg-black/[0.02] flex items-center gap-3.5">
+                <div className="p-4 rounded-xl border border-black/15 bg-black/[0.02] flex items-center gap-3.5">
                   <div className="w-12 h-12 rounded-xl bg-black/5 border border-black/20 flex items-center justify-center text-sm font-black overflow-hidden relative shrink-0">
                     {selectedRequest.client?.logoUrl ? (
                       <img src={getFullImageUrl(selectedRequest.client.logoUrl)} alt="Client" className="w-full h-full object-cover" />
@@ -1249,7 +1249,7 @@ export const SiteRequestsManagement: React.FC = () => {
       {/* Decline Confirmation Modal */}
       {isRejectModalOpen && selectedRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border-2 border-black rounded-2xl max-w-md w-full shadow-2xl flex flex-col overflow-hidden">
+          <div className="bg-white border border-black rounded-2xl max-w-md w-full shadow-2xl flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-black/10 flex items-center justify-between bg-zinc-50">
               <h3 className="text-sm font-black text-red-600 uppercase tracking-wider">Decline Service Request</h3>
               <button onClick={() => setIsRejectModalOpen(false)} className="p-1 rounded hover:bg-black/5 text-black">
