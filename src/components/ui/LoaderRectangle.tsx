@@ -3,17 +3,12 @@ import styles from './LoaderRectangle.module.css';
 
 interface LoaderRectangleProps {
   fullScreen?: boolean;
+  className?: string;
 }
 
-export const LoaderRectangle: React.FC<LoaderRectangleProps> = ({ fullScreen = false }) => {
+export const LoaderRectangle: React.FC<LoaderRectangleProps> = ({ fullScreen = false, className = '' }) => {
   const content = (
-    <div className={styles.loaderRectangle}>
-      <div></div>
-      <div></div>
-      <div></div>
-      <div></div>
-      <div></div>
-    </div>
+    <div className={`${styles['custom-loader']} ${className}`.trim()}></div>
   );
 
   if (fullScreen) {

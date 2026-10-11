@@ -10,13 +10,15 @@ interface HeaderProps {
   setIsSidebarOpen: (open: boolean) => void;
   activeMenu: string;
   setActiveMenu?: (menu: string) => void;
+  isProfileComplete?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   isSidebarOpen,
   setIsSidebarOpen,
   activeMenu,
-  setActiveMenu
+  setActiveMenu,
+  isProfileComplete = true
 }) => {
   const { user } = useAuthStore();
 
@@ -26,6 +28,8 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Overview Dashboard';
       case 'client-sites':
         return 'Monitored Sites';
+      case 'client-requests':
+        return 'Site Service Requests';
       case 'client-dob':
         return 'Occurrence Book';
       case 'client-incidents':
@@ -55,8 +59,13 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Menu className="w-4 h-4" />
         </button>
-        <h2 className="text-sm font-black text-black tracking-tight transition-all duration-300">
-          {getHeaderTitle()}
+        <h2 className="text-sm font-black text-black tracking-tight transition-all duration-300 flex items-center gap-2">
+          <span>{getHeaderTitle()}</span>
+          {!isProfileComplete && (
+            <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
+              Setup Required
+            </span>
+          )}
         </h2>
       </div>
 

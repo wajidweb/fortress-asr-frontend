@@ -6,7 +6,7 @@ import {
   Users, MapPin, LogOut, ChevronDown, ChevronRight, 
   Settings, Calendar, ClipboardList, LayoutGrid,
   Activity, AlertTriangle, ShieldCheck, FileText, 
-  TrendingUp, Award, Wrench, Coins
+  TrendingUp, Award, Wrench, Coins, Building2, Compass
 } from 'lucide-react';
 import { User } from '@/store/useAuthStore';
 
@@ -202,6 +202,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </span>
                 </div>
                 <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'clients-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+              </button>
+
+              {/* Site Requests Queue */}
+              <button 
+                onClick={() => setActiveMenu('admin-requests')}
+                title="Site Service Requests"
+                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
+                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                  ${activeMenu === 'admin-requests' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                `}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Building2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                    Site Requests
+                  </span>
+                </div>
+                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'admin-requests' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+              </button>
+
+              {/* Site Management */}
+              <button 
+                onClick={() => setActiveMenu('sites-dash')}
+                title="Monitored Property Management"
+                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
+                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                  ${activeMenu === 'sites-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                `}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Compass className="w-3.5 h-3.5 shrink-0" />
+                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                    Site Management
+                  </span>
+                </div>
+                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'sites-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
               </button>
 
               {/* Rota / Shift Calendar */}

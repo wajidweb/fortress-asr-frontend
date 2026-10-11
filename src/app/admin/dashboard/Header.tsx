@@ -30,6 +30,10 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Guard Management';
       case 'clients-dash':
         return 'Client Management';
+      case 'admin-requests':
+        return 'Site Service Requests';
+      case 'sites-dash':
+        return 'Property & Geofence Management';
       case 'rota':
         return 'Rota Management';
       case 'patrols':

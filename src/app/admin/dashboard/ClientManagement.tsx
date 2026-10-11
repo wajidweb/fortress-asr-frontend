@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminService, ClientManagementProfile } from '@/services/admin.service';
 import { useUIStore } from '@/store/useUIStore';
 import { getFullImageUrl } from '@/services/api';
@@ -27,22 +27,42 @@ import {
   DollarSign,
   Shield,
   FileText,
-  Lock
+  Lock,
+  ChevronLeft,
+  ChevronRight,
+  RotateCw
 } from 'lucide-react';
 
 export const ClientManagement: React.FC = () => {
   const [clients, setClients] = useState<ClientManagementProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Pagination & stats
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+  });
+  const [stats, setStats] = useState({
+    total: 0,
+    pendingApproval: 0,
+    active: 0,
+    suspended: 0,
+  });
   
   // Selected client for Modal popup
   const [selectedClient, setSelectedClient] = useState<ClientManagementProfile | null>(null);
 
-  // Tabs: 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED' | 'ALL'
-  const [activeTab, setActiveTab] = useState<'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED' | 'ALL'>('PENDING_APPROVAL');
+  // Tabs: 'ALL' | 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED'
+  const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
 
   const addToast = useUIStore((state) => state.addToast);
 
@@ -59,18 +79,31 @@ export const ClientManagement: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedClient]);
 
-  // Load clients based on active tab
-  const loadClients = async () => {
+  // Load clients based on active tab, search, and pagination
+  const loadClients = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const statusFilter = activeTab === 'ALL' ? undefined : activeTab;
-      const res = await adminService.getClients(statusFilter);
-      setClients(res.clients);
+      const res = await adminService.getClients({
+        status: activeTab === 'ALL' ? undefined : activeTab,
+        search: searchQuery.trim() || undefined,
+        page,
+        limit,
+      });
+
+      setClients(res.clients || []);
+      if (res.pagination) {
+        setPagination(res.pagination);
+      }
+      if (res.stats) {
+        setStats(res.stats);
+      }
 
       // If a client is open in modal, update its snapshot
       if (selectedClient) {
-        const updatedSelected = res.clients.find(c => c.id === selectedClient.id || c.userId === selectedClient.userId);
+        const updatedSelected = (res.clients || []).find(
+          (c) => c.id === selectedClient.id || c.userId === selectedClient.userId
+        );
         if (updatedSelected) {
           setSelectedClient(updatedSelected);
         }
@@ -82,11 +115,32 @@ export const ClientManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, searchQuery, page, limit, selectedClient, addToast]);
 
   useEffect(() => {
     loadClients();
-  }, [activeTab]);
+  }, [activeTab, page, limit]);
+
+  // Debounced search trigger
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setPage(1);
+      loadClients();
+    }, 350);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadClients();
+      addToast('Corporate client records refreshed with latest updates', 'success');
+    } catch {
+      // loadClients handles error toast
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleApprove = async (id: string, name: string) => {
     setActionLoadingId(id);
@@ -156,17 +210,8 @@ export const ClientManagement: React.FC = () => {
     }
   };
 
-  // Filter clients by search query
-  const filteredClients = clients.filter((c) => {
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    const company = (c.companyName || '').toLowerCase();
-    const email = (c.user?.email || '').toLowerCase();
-    const contact = (c.contactPerson || '').toLowerCase();
-    const repName = `${c.user?.firstName || ''} ${c.user?.lastName || ''}`.toLowerCase();
-    const slug = (c.urlSlug || '').toLowerCase();
-    return company.includes(q) || email.includes(q) || contact.includes(q) || repName.includes(q) || slug.includes(q);
-  });
+  // Active client accounts list from backend pagination
+  const filteredClients = clients;
 
   return (
     <div className="w-full flex flex-col gap-6 animate-fade-in text-black font-jakarta pb-16 select-none relative">
@@ -214,9 +259,19 @@ export const ClientManagement: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={loading || isRefreshing}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-black hover:bg-black/5 text-black text-[10px] font-black uppercase tracking-wider rounded-sm transition shadow-2xs cursor-pointer disabled:opacity-50"
+              title="Refresh corporate client records"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${isRefreshing || loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+
             <span className="px-3 py-1.5 bg-black text-white rounded-sm text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5" />
-              <span>Total Accounts: {filteredClients.length}</span>
+              <span>Total Accounts: {pagination.total}</span>
             </span>
           </div>
         </div>
@@ -227,7 +282,31 @@ export const ClientManagement: React.FC = () => {
           {/* Tabs */}
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setActiveTab('PENDING_APPROVAL')}
+              onClick={() => {
+                setActiveTab('ALL');
+                setPage(1);
+              }}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
+                ${activeTab === 'ALL' 
+                  ? 'bg-black text-white shadow-xs' 
+                  : 'bg-white text-black border border-black hover:bg-black/5'
+                }
+              `}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>All Corporate Clients</span>
+              {stats.total > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black ${activeTab === 'ALL' ? 'bg-white text-black' : 'bg-black/10 text-black'}`}>
+                  {stats.total}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('PENDING_APPROVAL');
+                setPage(1);
+              }}
               className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
                 ${activeTab === 'PENDING_APPROVAL' 
                   ? 'bg-black text-white shadow-xs' 
@@ -237,10 +316,18 @@ export const ClientManagement: React.FC = () => {
             >
               <Clock className="w-3.5 h-3.5" />
               <span>New Registrations (Pending)</span>
+              {stats.pendingApproval > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[8px] font-black bg-amber-500 text-white">
+                  {stats.pendingApproval}
+                </span>
+              )}
             </button>
 
             <button
-              onClick={() => setActiveTab('ACTIVE')}
+              onClick={() => {
+                setActiveTab('ACTIVE');
+                setPage(1);
+              }}
               className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
                 ${activeTab === 'ACTIVE' 
                   ? 'bg-black text-white shadow-xs' 
@@ -250,10 +337,18 @@ export const ClientManagement: React.FC = () => {
             >
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Approved Clients</span>
+              {stats.active > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black ${activeTab === 'ACTIVE' ? 'bg-white text-black' : 'bg-black/10 text-black'}`}>
+                  {stats.active}
+                </span>
+              )}
             </button>
 
             <button
-              onClick={() => setActiveTab('SUSPENDED')}
+              onClick={() => {
+                setActiveTab('SUSPENDED');
+                setPage(1);
+              }}
               className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
                 ${activeTab === 'SUSPENDED' 
                   ? 'bg-black text-white shadow-xs' 
@@ -263,19 +358,11 @@ export const ClientManagement: React.FC = () => {
             >
               <Ban className="w-3.5 h-3.5" />
               <span>Suspended</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('ALL')}
-              className={`px-4 py-2 text-[10px] font-black uppercase tracking-wider rounded-md transition duration-200 flex items-center gap-2 cursor-pointer
-                ${activeTab === 'ALL' 
-                  ? 'bg-black text-white shadow-xs' 
-                  : 'bg-white text-black border border-black hover:bg-black/5'
-                }
-              `}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>All Clients</span>
+              {stats.suspended > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-black ${activeTab === 'SUSPENDED' ? 'bg-white text-black' : 'bg-black/10 text-black'}`}>
+                  {stats.suspended}
+                </span>
+              )}
             </button>
           </div>
 
@@ -463,308 +550,583 @@ export const ClientManagement: React.FC = () => {
           </div>
         )}
 
-      </div>
-
-      {/* Full Details Modal Dialog */}
-      {selectedClient && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xs animate-fade-in"
-          onClick={() => setSelectedClient(null)}
-        >
-          <div 
-            className="w-full max-w-3xl bg-white border-2 border-black rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
+        {/* Proper Responsive Pagination Bar */}
+        {!loading && clients.length > 0 && (
+          <div className="pt-4 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between gap-4 bg-white text-xs font-bold">
             
-            {/* Modal Top Title Bar */}
-            <div className="h-14 border-b-2 border-black px-6 flex items-center justify-between bg-white shrink-0">
-              <div className="flex items-center gap-2.5">
-                <Building2 className="w-4 h-4 text-black" />
-                <h3 className="text-xs font-black uppercase tracking-wider text-black">
-                  Corporate Client Profile & Audit Record
-                </h3>
+            {/* Entries Indicator & Rows selector */}
+            <div className="flex items-center gap-3">
+              <span className="text-black/60 font-semibold text-[11px]">
+                Showing {pagination.total === 0 ? 0 : (page - 1) * limit + 1} to {Math.min(page * limit, pagination.total)} of {pagination.total} accounts
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-black/50 uppercase">Rows:</span>
+                <select
+                  value={limit}
+                  onChange={(e) => {
+                    setLimit(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  className="px-2 py-0.5 border border-black/30 rounded text-xs font-bold bg-white focus:outline-none cursor-pointer"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
               </div>
+            </div>
+
+            {/* Page Navigation */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                disabled={page <= 1}
+                className="p-1.5 rounded-md border border-black/30 hover:border-black hover:bg-black/5 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
+                title="Previous Page"
+              >
+                <ChevronLeft className="w-4 h-4 text-black" />
+              </button>
+
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === pagination.totalPages || Math.abs(p - page) <= 1)
+                .map((p, idx, arr) => (
+                  <React.Fragment key={p}>
+                    {idx > 0 && arr[idx - 1] !== p - 1 && (
+                      <span className="px-1 text-black/40 font-bold">...</span>
+                    )}
+                    <button
+                      onClick={() => setPage(p)}
+                      className={`w-7 h-7 rounded-md text-xs font-black transition cursor-pointer
+                        ${page === p
+                          ? 'bg-black text-white shadow-xs'
+                          : 'border border-black/25 hover:border-black hover:bg-black/5 text-black'
+                        }
+                      `}
+                    >
+                      {p}
+                    </button>
+                  </React.Fragment>
+                ))}
 
               <button
-                onClick={() => setSelectedClient(null)}
-                className="p-1.5 border border-black rounded-md hover:bg-black hover:text-white text-black transition cursor-pointer"
-                title="Close modal (Esc)"
+                onClick={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))}
+                disabled={page >= pagination.totalPages}
+                className="p-1.5 rounded-md border border-black/30 hover:border-black hover:bg-black/5 disabled:opacity-30 disabled:pointer-events-none transition cursor-pointer"
+                title="Next Page"
               >
-                <X className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 text-black" />
               </button>
             </div>
 
-            {/* Modal Scrollable Body */}
-            <div className="p-6 sm:p-8 overflow-y-auto flex flex-col gap-7 select-text">
+          </div>
+        )}
+
+      </div>
+
+      {/* Full Details Modal Dialog - Google UI Redesign with Brand Palette */}
+      {selectedClient && (() => {
+        const repName = selectedClient.user?.firstName || selectedClient.user?.lastName 
+          ? `${selectedClient.user.firstName || ''} ${selectedClient.user.lastName || ''}`.trim() 
+          : 'Not Provided';
+        const isActionLoading = actionLoadingId === selectedClient.id || actionLoadingId === selectedClient.userId;
+
+        return (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-6 bg-black/65 backdrop-blur-xs animate-fade-in"
+            onClick={() => setSelectedClient(null)}
+          >
+            <div 
+              className="w-full max-w-5xl xl:max-w-6xl bg-white border border-black/15 rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            >
               
-              {/* Hero Organization Identity Card */}
-              <div className="p-5 border-2 border-black rounded-lg bg-black/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-                <div className="flex items-center gap-5 sm:gap-6">
-                  
-                  {/* Logo / Image Box with right-side spacing */}
-                  <div className="w-20 h-20 rounded-lg bg-white border-2 border-black flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative mr-2 sm:mr-3">
-                    {selectedClient.logoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={getFullImageUrl(selectedClient.logoUrl)}
-                        alt={selectedClient.companyName || 'Corporate Client'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Building2 className="w-9 h-9 text-black" />
-                    )}
+              {/* Modal Top Title Bar (Google Workspace / Cloud Console style) */}
+              <div className="px-5 sm:px-7 py-4 border-b border-black/10 flex items-center justify-between bg-white shrink-0">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-[#032031] text-white flex items-center justify-center shadow-xs shrink-0">
+                    <Building2 className="w-5 h-5 text-white" />
                   </div>
-
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[8px] font-black uppercase tracking-widest text-black/60">Official Corporate Entity</span>
-                    <h2 className="text-lg font-black text-black tracking-tight uppercase">
-                      {selectedClient.companyName || 'Pending Registration'}
-                    </h2>
-
-                    <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                      {selectedClient.urlSlug && (
-                        <span className="px-2 py-0.5 bg-white border border-black rounded text-[8px] font-bold text-black uppercase tracking-wider flex items-center gap-1 font-mono">
-                          <Globe className="w-2.5 h-2.5" /> /client/{selectedClient.urlSlug}
-                        </span>
-                      )}
-
-                      <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
-                        selectedClient.status === 'ACTIVE'
-                          ? 'bg-black text-white'
-                          : selectedClient.status === 'PENDING_APPROVAL'
-                          ? 'bg-amber-100 text-amber-900 border border-amber-400'
-                          : 'bg-red-600 text-white'
-                      }`}>
-                        {selectedClient.status === 'ACTIVE'
-                          ? 'Active Corporate Partner'
-                          : selectedClient.status === 'PENDING_APPROVAL'
-                          ? 'Pending Approval'
-                          : 'Suspended Account'}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm sm:text-base font-black text-[#032031] tracking-tight">
+                        Corporate Client Profile & Account Dossier
+                      </h3>
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#032031]/10 text-[#032031]">
+                        Corporate Entity
                       </span>
                     </div>
-                  </div>
-
-                </div>
-
-                <div className="flex flex-col items-start sm:items-end text-left sm:text-right gap-1 shrink-0">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-black/60">Account Inception</span>
-                  <span className="text-xs font-black text-black">{formatDate(selectedClient.createdAt)}</span>
-                  <span className="text-[8px] font-medium text-black/60">{formatDateTime(selectedClient.createdAt)}</span>
-                </div>
-              </div>
-
-              {/* Grid 1: Authorized Account Representative */}
-              <div className="flex flex-col gap-3">
-                <div className="border-b border-black/15 pb-2 flex items-center gap-2">
-                  <User className="w-3.5 h-3.5 text-black" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
-                    Primary Account Representative
-                  </h4>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Full Legal Name</span>
-                    <span className="text-xs font-bold text-black">
-                      {selectedClient.user?.firstName || selectedClient.user?.lastName 
-                        ? `${selectedClient.user.firstName} ${selectedClient.user.lastName}` 
-                        : 'Not Provided'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Account Email Address</span>
-                    <span className="text-xs font-bold text-black flex items-center gap-1.5 font-mono">
-                      <Mail className="w-3 h-3 text-black" />
-                      <span>{selectedClient.user?.email || 'N/A'}</span>
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Primary Mobile Phone</span>
-                    <span className="text-xs font-bold text-black flex items-center gap-1.5 font-mono">
-                      <Phone className="w-3 h-3 text-black" />
-                      <span>{selectedClient.user?.phoneNumber || selectedClient.contactPhone || 'N/A'}</span>
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">User Role & Login State</span>
-                    <span className="text-xs font-bold text-black flex items-center gap-2">
-                      <span className="px-1.5 py-0.5 bg-black text-white rounded text-[8px] font-black">
-                        {selectedClient.user?.role || 'CLIENT'}
-                      </span>
-                      <span className="text-[9px] font-bold text-black/70">
-                        {selectedClient.user?.isActive ? 'Login Enabled' : 'Login Restricted'}
-                      </span>
-                    </span>
+                    <p className="text-[11px] text-black/55 font-medium">
+                      Official corporate account registration, billing rates & operational monitored properties audit
+                    </p>
                   </div>
                 </div>
-              </div>
-
-              {/* Grid 2: Corporate & Contract Specifications */}
-              <div className="flex flex-col gap-3">
-                <div className="border-b border-black/15 pb-2 flex items-center gap-2">
-                  <FileText className="w-3.5 h-3.5 text-black" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
-                    Corporate Entity & Invoicing Details
-                  </h4>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Corporate Entity Name</span>
-                    <span className="text-xs font-bold text-black">
-                      {selectedClient.companyName || 'N/A'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Hourly Billing Rate</span>
-                    <span className="text-xs font-bold text-black flex items-center gap-1 font-mono">
-                      <span>£{selectedClient.billingRateHour || '0.00'} / hour</span>
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white sm:col-span-2">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Corporate Billing Location (Tax & Invoice Calculations)</span>
-                    <span className="text-xs font-bold text-black whitespace-pre-wrap leading-relaxed">
-                      {selectedClient.billingAddress || 'No billing address recorded.'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid 3: Operational Contacts & Monitored Sites */}
-              <div className="flex flex-col gap-3">
-                <div className="border-b border-black/15 pb-2 flex items-center gap-2">
-                  <Layers className="w-3.5 h-3.5 text-black" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
-                    Site Operations & Monitored Locations
-                  </h4>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Designated Site Contact</span>
-                    <span className="text-xs font-bold text-black">
-                      {selectedClient.contactPerson || 'Not Assigned'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Direct Office / Site Phone</span>
-                    <span className="text-xs font-bold text-black font-mono">
-                      {selectedClient.contactPhone || 'Not Assigned'}
-                    </span>
-                  </div>
-
-                  <div className="p-3.5 border border-black rounded-md flex flex-col gap-1.5 bg-white sm:col-span-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Assigned Monitored Sites</span>
-                      <span className="text-[8px] font-black text-black uppercase">
-                        {selectedClient.sites.length} Active {selectedClient.sites.length === 1 ? 'Site' : 'Sites'}
-                      </span>
-                    </div>
-
-                    {selectedClient.sites.length === 0 ? (
-                      <span className="text-xs font-bold text-black/60 italic">No operational sites currently assigned to this corporate account.</span>
-                    ) : (
-                      <div className="flex flex-col gap-2 pt-1">
-                        {selectedClient.sites.map(site => (
-                          <div key={site.id} className="p-2.5 bg-black/5 border border-black rounded flex items-center justify-between gap-3 text-xs">
-                            <span className="font-bold text-black">{site.name}</span>
-                            {site.address && <span className="text-black/60 text-[11px] font-medium truncate max-w-xs">{site.address}</span>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid 4: Audit & System Metadata */}
-              <div className="flex flex-col gap-3">
-                <div className="border-b border-black/15 pb-2 flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-black" />
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-black">
-                    Audit Trail & Timestamps
-                  </h4>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <div className="p-3 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Account Opened Date & Time</span>
-                    <span className="font-bold text-black">{formatDateTime(selectedClient.createdAt)}</span>
-                  </div>
-
-                  <div className="p-3 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Last Profile Update</span>
-                    <span className="font-bold text-black">{formatDateTime(selectedClient.updatedAt)}</span>
-                  </div>
-
-                  <div className="p-3 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">User Account ID</span>
-                    <span className="font-mono text-[10px] text-black select-all">{selectedClient.userId}</span>
-                  </div>
-
-                  <div className="p-3 border border-black rounded-md flex flex-col gap-0.5 bg-white">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-black/50">Client Profile Record ID</span>
-                    <span className="font-mono text-[10px] text-black select-all">{selectedClient.id}</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Modal Bottom Actions Bar */}
-            <div className="h-16 border-t-2 border-black px-6 flex items-center justify-between bg-white shrink-0">
-              <div className="flex items-center gap-2 text-black text-[10px] font-bold">
-                <ShieldCheck className="w-4 h-4 text-black" />
-                <span>Verified SOMS Corporate Account</span>
-              </div>
-
-              <div className="flex items-center gap-2.5">
-                {selectedClient.status !== 'ACTIVE' && (
-                  <button
-                    onClick={async () => {
-                      const name = selectedClient.companyName;
-                      await handleApprove(selectedClient.id, name);
-                    }}
-                    disabled={actionLoadingId === selectedClient.id || actionLoadingId === selectedClient.userId}
-                    className="px-4 py-2 bg-black hover:bg-black/85 text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Approve Client</span>
-                  </button>
-                )}
-
-                {selectedClient.status !== 'SUSPENDED' && (
-                  <button
-                    onClick={async () => {
-                      const name = selectedClient.companyName;
-                      await handleReject(selectedClient.id, name);
-                    }}
-                    disabled={actionLoadingId === selectedClient.id || actionLoadingId === selectedClient.userId}
-                    className="px-4 py-2 border-2 border-black text-black hover:bg-black hover:text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-                  >
-                    <Ban className="w-3.5 h-3.5" />
-                    <span>Suspend</span>
-                  </button>
-                )}
 
                 <button
                   onClick={() => setSelectedClient(null)}
-                  className="px-4 py-2 border border-black text-black hover:bg-black hover:text-white rounded-md text-[10px] font-black uppercase tracking-wider transition cursor-pointer"
+                  className="w-9 h-9 rounded-xl border border-black/10 hover:border-black/30 hover:bg-black/5 text-black/60 hover:text-black flex items-center justify-center transition cursor-pointer"
+                  title="Close dossier (Esc)"
                 >
-                  Close
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </div>
 
+              {/* Modal Scrollable Body */}
+              <div className="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-7 flex flex-col gap-6 bg-zinc-50/60 select-text">
+                
+                {/* 1. Hero Organization Identity Card */}
+                <div className="bg-white border border-black/10 rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-xs">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
+                    
+                    {/* Organization Logo / Avatar */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-zinc-100 border-2 border-black/15 flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative">
+                      {selectedClient.logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={getFullImageUrl(selectedClient.logoUrl)}
+                          alt={selectedClient.companyName || 'Corporate Client'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-[#032031] to-black text-white flex items-center justify-center font-black text-2xl tracking-wider">
+                          {selectedClient.companyName?.[0]?.toUpperCase() || 'C'}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Metadata & Details */}
+                    <div className="flex flex-col gap-1.5 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl sm:text-2xl font-black text-[#032031] tracking-tight">
+                          {selectedClient.companyName || 'Pending Registration'}
+                        </h2>
+
+                        {/* Status Chip */}
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          selectedClient.status === 'ACTIVE'
+                            ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                            : selectedClient.status === 'PENDING_APPROVAL'
+                            ? 'bg-amber-50 border border-amber-200 text-amber-900'
+                            : 'bg-red-50 border border-red-200 text-red-800'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            selectedClient.status === 'ACTIVE' ? 'bg-emerald-600 animate-pulse' : selectedClient.status === 'PENDING_APPROVAL' ? 'bg-amber-500' : 'bg-red-600'
+                          }`} />
+                          {selectedClient.status === 'ACTIVE'
+                            ? 'Active Corporate Partner'
+                            : selectedClient.status === 'PENDING_APPROVAL'
+                            ? 'Pending Approval'
+                            : 'Suspended Account'}
+                        </span>
+                      </div>
+
+                      {/* URL Slug & Contact Badges */}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-black/60 font-medium">
+                        {selectedClient.urlSlug && (
+                          <span className="flex items-center gap-1.5 font-mono text-[11px] text-[#032031] font-bold">
+                            <Globe className="w-3.5 h-3.5 text-[#032031]/70" />
+                            <span>/client/{selectedClient.urlSlug}</span>
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1.5 font-mono text-[11px] text-black/80">
+                          <Mail className="w-3.5 h-3.5 text-[#032031]/70" />
+                          <span>{selectedClient.user?.email || 'N/A'}</span>
+                        </span>
+                        {(selectedClient.user?.phoneNumber || selectedClient.contactPhone) && (
+                          <span className="flex items-center gap-1.5 font-mono text-[11px] text-black/80">
+                            <Phone className="w-3.5 h-3.5 text-[#032031]/70" />
+                            <span>{selectedClient.user?.phoneNumber || selectedClient.contactPhone}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Quick Chips Row */}
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#032031]/5 border border-[#032031]/15 text-[#032031] text-[10px] font-black">
+                          <DollarSign className="w-3.5 h-3.5 text-[#032031]" />
+                          Billing: £{selectedClient.billingRateHour || '0.00'} / hour
+                        </span>
+
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-[10px] font-black">
+                          <Layers className="w-3.5 h-3.5 text-blue-700" />
+                          {selectedClient.sites.length} Monitored {selectedClient.sites.length === 1 ? 'Site' : 'Sites'}
+                        </span>
+
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/5 text-black/70 text-[10px] font-bold">
+                          <Calendar className="w-3.5 h-3.5 text-black/50" />
+                          Partner Since: {formatDate(selectedClient.createdAt)}
+                        </span>
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  {/* Right Header Status / IDs */}
+                  <div className="flex lg:flex-col items-center lg:items-end justify-between w-full lg:w-auto pt-3 lg:pt-0 border-t lg:border-t-0 border-black/10 gap-2 shrink-0">
+                    <div className="flex flex-col lg:items-end text-left lg:text-right">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Account Verification</span>
+                      <span className={`text-xs font-black ${selectedClient.status === 'ACTIVE' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                        {selectedClient.status === 'ACTIVE' ? 'Verified Corporate Partner' : 'Awaiting Operational Clearance'}
+                      </span>
+                    </div>
+
+                    <div className="text-[10px] text-black/50 font-mono">
+                      ID: {selectedClient.id.slice(0, 16)}...
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Google-Style Metric Overview Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                  
+                  {/* Card 1: Account Status */}
+                  <div className="bg-white border border-black/10 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Partner Authorization</span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-black text-[#032031]">
+                        {selectedClient.status === 'ACTIVE' ? 'Active Account' : (selectedClient.status === 'PENDING_APPROVAL' ? 'Pending Approval' : 'Suspended')}
+                      </span>
+                      <ShieldCheck className={`w-4 h-4 ${selectedClient.status === 'ACTIVE' ? 'text-emerald-600' : 'text-amber-500'}`} />
+                    </div>
+                    <span className="text-[10px] text-black/60 font-semibold truncate">
+                      {selectedClient.user?.isActive ? 'Login & Dispatch Active' : 'Access Restricted'}
+                    </span>
+                  </div>
+
+                  {/* Card 2: Monitored Sites */}
+                  <div className="bg-white border border-black/10 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Monitored Locations</span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-black text-[#032031]">
+                        {selectedClient.sites.length} Active {selectedClient.sites.length === 1 ? 'Property' : 'Properties'}
+                      </span>
+                      <Layers className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <span className="text-[10px] text-black/60 font-semibold truncate">
+                      Assigned physical security sites
+                    </span>
+                  </div>
+
+                  {/* Card 3: Hourly Billing Rate */}
+                  <div className="bg-white border border-black/10 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Contract Billing Rate</span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-black text-[#032031]">
+                        £{selectedClient.billingRateHour || '0.00'} / hr
+                      </span>
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <span className="text-[10px] text-black/60 font-semibold">Standard service hourly rate</span>
+                  </div>
+
+                  {/* Card 4: Portal Security */}
+                  <div className="bg-white border border-black/10 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Portal Authentication</span>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-sm font-black text-[#032031]">
+                        {selectedClient.user?.isEmailVerified ? 'Email Verified' : 'Unverified Email'}
+                      </span>
+                      <CheckCircle2 className={`w-4 h-4 ${selectedClient.user?.isEmailVerified ? 'text-emerald-600' : 'text-amber-500'}`} />
+                    </div>
+                    <span className="text-[10px] text-black/60 font-semibold">
+                      Client portal access status
+                    </span>
+                  </div>
+
+                </div>
+
+                {/* 3. Detailed Audit Dossier Grid (2-column layout on Desktop) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  
+                  {/* Left Column: Authorized Representative & Billing */}
+                  <div className="flex flex-col gap-5">
+                    
+                    {/* Primary Account Representative Card */}
+                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <div className="flex items-center justify-between border-b border-black/10 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-[#032031]/10 text-[#032031] flex items-center justify-center">
+                            <User className="w-4 h-4 text-[#032031]" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-[#032031]">
+                              Primary Account Representative
+                            </h4>
+                            <p className="text-[10px] text-black/50 font-medium">Authorized contract manager & account liaison</p>
+                          </div>
+                        </div>
+
+                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-[#032031]/10 text-[#032031]">
+                          {selectedClient.user?.role || 'CLIENT'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Representative Legal Name</span>
+                          <span className="font-bold text-xs text-[#032031]">
+                            {repName}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Account Email Address</span>
+                          <span className="font-mono font-bold text-xs text-[#032031] truncate">
+                            {selectedClient.user?.email || 'N/A'}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Direct Contact Phone</span>
+                          <span className="font-mono font-bold text-xs text-[#032031]">
+                            {selectedClient.user?.phoneNumber || selectedClient.contactPhone || 'N/A'}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Portal Login State</span>
+                          <span className="font-bold text-xs text-emerald-700 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{selectedClient.user?.isActive ? 'Active Login Enabled' : 'Access Suspended'}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Corporate Entity & Invoicing Card */}
+                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <div className="flex items-center justify-between border-b border-black/10 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-700 flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-emerald-700" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-[#032031]">
+                              Corporate Entity & Invoicing
+                            </h4>
+                            <p className="text-[10px] text-black/50 font-medium">Registered business entity & contract terms</p>
+                          </div>
+                        </div>
+
+                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Invoice Profile
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Corporate Entity Name</span>
+                          <span className="font-bold text-xs text-[#032031]">
+                            {selectedClient.companyName || 'N/A'}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Agreed Hourly Rate</span>
+                          <span className="font-mono font-bold text-xs text-[#032031]">
+                            £{selectedClient.billingRateHour || '0.00'} / hour
+                          </span>
+                        </div>
+
+                        <div className="p-3.5 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1 sm:col-span-2">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-[#032031]/60" />
+                            Corporate Billing Location & Address
+                          </span>
+                          <span className="font-medium text-xs text-[#032031] whitespace-pre-wrap leading-relaxed">
+                            {selectedClient.billingAddress || 'No billing address recorded for this corporate account.'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Right Column: Sites, Operational Contacts & Audit */}
+                  <div className="flex flex-col gap-5">
+                    
+                    {/* Site Operations & Monitored Properties Card */}
+                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <div className="flex items-center justify-between border-b border-black/10 pb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-700 flex items-center justify-center">
+                            <Layers className="w-4 h-4 text-blue-700" />
+                          </div>
+                          <div>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-[#032031]">
+                              Assigned Monitored Sites
+                            </h4>
+                            <p className="text-[10px] text-black/50 font-medium">Physical properties receiving security coverage</p>
+                          </div>
+                        </div>
+
+                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-50 text-blue-800 border border-blue-200">
+                          {selectedClient.sites.length} Active {selectedClient.sites.length === 1 ? 'Site' : 'Sites'}
+                        </span>
+                      </div>
+
+                      {/* Site Contacts */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Designated Site Contact</span>
+                          <span className="font-bold text-xs text-[#032031]">
+                            {selectedClient.contactPerson || 'Not Assigned'}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Site Telephone</span>
+                          <span className="font-mono font-bold text-xs text-[#032031]">
+                            {selectedClient.contactPhone || 'Not Assigned'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Monitored Properties List */}
+                      <div className="p-4 bg-zinc-50 border border-black/10 rounded-xl flex flex-col gap-2.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-black/50">
+                          Monitored Physical Facilities
+                        </span>
+
+                        {selectedClient.sites.length === 0 ? (
+                          <div className="p-3 bg-white border border-black/10 rounded-xl text-xs text-black/60 font-semibold italic text-center">
+                            No monitored physical sites are currently provisioned for this client.
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            {selectedClient.sites.map((site) => (
+                              <div
+                                key={site.id}
+                                className="p-3 bg-white border border-black/10 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shadow-2xs"
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-[#032031]/5 border border-[#032031]/15 text-[#032031] flex items-center justify-center shrink-0">
+                                    <Building2 className="w-4 h-4 text-[#032031]" />
+                                  </div>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="font-black text-xs text-[#032031] truncate">
+                                      {site.name}
+                                    </span>
+                                    {site.address && (
+                                      <span className="text-[11px] text-black/60 truncate flex items-center gap-1">
+                                        <MapPin className="w-3 h-3 text-black/40 shrink-0" />
+                                        {site.address}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
+                                  Active Site
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+
+                    {/* Immutable Audit Trail & System Records Card */}
+                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <div className="flex items-center gap-2.5 border-b border-black/10 pb-3">
+                        <div className="w-8 h-8 rounded-lg bg-zinc-100 text-[#032031] flex items-center justify-center">
+                          <Clock className="w-4 h-4 text-[#032031]" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black uppercase tracking-wider text-[#032031]">
+                            Compliance Audit Trail & Identifiers
+                          </h4>
+                          <p className="text-[10px] text-black/50 font-medium">System immutable account timestamps & UUID tracking</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Account Opened Date</span>
+                          <span className="font-bold text-xs text-[#032031]">
+                            {formatDateTime(selectedClient.createdAt)}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Last Profile Update</span>
+                          <span className="font-bold text-xs text-[#032031]">
+                            {formatDateTime(selectedClient.updatedAt)}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">User Account ID</span>
+                          <span className="font-mono text-[10px] text-black/75 truncate select-all">
+                            {selectedClient.userId}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Client Profile Record ID</span>
+                          <span className="font-mono text-[10px] text-black/75 truncate select-all">
+                            {selectedClient.id}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Modal Bottom Actions Bar */}
+              <div className="px-5 sm:px-7 py-4 border-t border-black/10 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2 text-black/60 text-xs font-semibold">
+                  <ShieldCheck className="w-4 h-4 text-[#032031]" />
+                  <span>SOMS official corporate partner & monitored properties record</span>
+                </div>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                  {selectedClient.status !== 'ACTIVE' && (
+                    <button
+                      onClick={async () => {
+                        await handleApprove(selectedClient.id, selectedClient.companyName);
+                      }}
+                      disabled={isActionLoading}
+                      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#032031] hover:bg-black text-white rounded-xl text-xs font-black uppercase tracking-wider transition shadow-sm hover:shadow cursor-pointer disabled:opacity-50"
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      <span>{isActionLoading ? 'Processing...' : 'Approve Client Account'}</span>
+                    </button>
+                  )}
+
+                  {selectedClient.status !== 'SUSPENDED' && (
+                    <button
+                      onClick={async () => {
+                        await handleReject(selectedClient.id, selectedClient.companyName);
+                      }}
+                      disabled={isActionLoading}
+                      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-red-500 hover:border-red-600 text-red-600 hover:bg-red-50 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+                    >
+                      <Ban className="w-4 h-4" />
+                      <span>{isActionLoading ? 'Processing...' : 'Suspend Account'}</span>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setSelectedClient(null)}
+                    className="px-5 py-2.5 border border-black/20 hover:border-black text-black hover:bg-black/5 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
     </div>
   );

@@ -6,9 +6,11 @@ import {
   Users, MapPin, LogOut, ChevronDown, ChevronRight, 
   Settings, Calendar, ClipboardList, LayoutGrid,
   Activity, AlertTriangle, ShieldCheck, FileText, 
-  Shield, ChevronLeft, ChevronRight as ChevronRightIcon
+  Shield, ChevronLeft, ChevronRight as ChevronRightIcon,
+  Building2, Lock, ShieldAlert
 } from 'lucide-react';
 import { User } from '@/store/useAuthStore';
+import { useUIStore } from '@/store/useUIStore';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -17,6 +19,7 @@ interface SidebarProps {
   setActiveMenu: (menu: string) => void;
   handleLogout: () => void;
   user: User;
+  isProfileComplete: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -25,8 +28,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeMenu,
   setActiveMenu,
   handleLogout,
-  user
+  user,
+  isProfileComplete
 }) => {
+  const addToast = useUIStore((state) => state.addToast);
+
   // Collapsible navigation groups
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     portal: true,
@@ -34,9 +40,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   });
 
   const toggleGroup = (group: string) => {
-    if (isSidebarOpen) {
+    if (isSidebarOpen && isProfileComplete) {
       setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
     }
+  };
+
+  const handleMenuClick = (menuKey: string) => {
+    if (!isProfileComplete && menuKey !== 'client-profile') {
+      addToast('Please complete your corporate profile settings first to unlock this section.', 'info');
+      return;
+    }
+    setActiveMenu(menuKey);
   };
 
   return (
@@ -74,17 +88,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Collapse Button (Identical to Guard Sidebar Collapse design) */}
-          <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`
-              p-1 rounded-lg border border-white/10 bg-[#02141F] text-white hover:bg-white/10 hover:border-white focus:outline-none transition duration-200 shrink-0
-              ${isSidebarOpen ? 'flex' : 'hidden lg:flex absolute top-3.5 right-[-14px] z-50 w-7 h-7 items-center justify-center rounded-full shadow-lg'}
-            `}
-            title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
-          >
-            {isSidebarOpen ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRightIcon className="w-3.5 h-3.5" />}
-          </button>
+          {isProfileComplete && (
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className={`
+                p-1 rounded-lg border border-white/10 bg-[#02141F] text-white hover:bg-white/10 hover:border-white focus:outline-none transition duration-200 shrink-0
+                ${isSidebarOpen ? 'flex' : 'hidden lg:flex absolute top-3.5 right-[-14px] z-50 w-7 h-7 items-center justify-center rounded-full shadow-lg'}
+              `}
+              title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+            >
+              {isSidebarOpen ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRightIcon className="w-3.5 h-3.5" />}
+            </button>
+          )}
         </div>
+
+        {/* Profile Setup Required Warning Banner */}
+        {!isProfileComplete && isSidebarOpen && (
+          <div className="m-3 p-3 bg-amber-950/40 border border-amber-500/30 rounded-xl flex items-start gap-2.5 select-none animate-pulse">
+            <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[9px] font-black uppercase text-amber-300">Profile Setup Required</span>
+              <span className="text-[8px] text-white/80 font-bold leading-relaxed">
+                Complete your corporate profile details to unlock monitored sites, site requests, and operational reports.
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Navigation Items */}
         <nav className="py-4 flex flex-col gap-5 px-3">
@@ -107,11 +136,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               
               {/* Corporate Overview */}
               <button 
-                onClick={() => setActiveMenu('client-dash')}
-                title="Overview Dashboard"
+                onClick={() => handleMenuClick('client-dash')}
+                disabled={!isProfileComplete}
+                title={!isProfileComplete ? "Complete profile setup to unlock" : "Overview Dashboard"}
                 className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
                   ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'client-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  ${!isProfileComplete 
+                    ? 'opacity-40 cursor-not-allowed hover:bg-transparent text-white/50' 
+                    : (activeMenu === 'client-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white')
+                  }
                 `}
               >
                 <div className="flex items-center gap-2 truncate">
@@ -120,16 +153,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     Overview
                   </span>
                 </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                {isSidebarOpen && !isProfileComplete ? (
+                  <Lock className="w-3 h-3 text-white/40 shrink-0" />
+                ) : (
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                )}
               </button>
 
               {/* Monitored Sites */}
               <button 
-                onClick={() => setActiveMenu('client-sites')}
-                title="Monitored Sites"
+                onClick={() => handleMenuClick('client-sites')}
+                disabled={!isProfileComplete}
+                title={!isProfileComplete ? "Complete profile setup to unlock" : "Monitored Sites"}
                 className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
                   ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'client-sites' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  ${!isProfileComplete 
+                    ? 'opacity-40 cursor-not-allowed hover:bg-transparent text-white/50' 
+                    : (activeMenu === 'client-sites' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white')
+                  }
                 `}
               >
                 <div className="flex items-center gap-2 truncate">
@@ -138,16 +179,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     Secure Sites
                   </span>
                 </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-sites' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                {isSidebarOpen && !isProfileComplete ? (
+                  <Lock className="w-3 h-3 text-white/40 shrink-0" />
+                ) : (
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-sites' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                )}
+              </button>
+
+              {/* Site Service Requests */}
+              <button 
+                onClick={() => handleMenuClick('client-requests')}
+                disabled={!isProfileComplete}
+                title={!isProfileComplete ? "Complete profile setup to unlock" : "Site Deployment Requests"}
+                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
+                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                  ${!isProfileComplete 
+                    ? 'opacity-40 cursor-not-allowed hover:bg-transparent text-white/50' 
+                    : (activeMenu === 'client-requests' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white')
+                  }
+                `}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Building2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                    Site Requests
+                  </span>
+                </div>
+                {isSidebarOpen && !isProfileComplete ? (
+                  <Lock className="w-3 h-3 text-white/40 shrink-0" />
+                ) : (
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-requests' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                )}
               </button>
 
               {/* Occurrence Book */}
               <button 
-                onClick={() => setActiveMenu('client-dob')}
-                title="Occurrence Book"
+                onClick={() => handleMenuClick('client-dob')}
+                disabled={!isProfileComplete}
+                title={!isProfileComplete ? "Complete profile setup to unlock" : "Occurrence Book"}
                 className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
                   ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'client-dob' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  ${!isProfileComplete 
+                    ? 'opacity-40 cursor-not-allowed hover:bg-transparent text-white/50' 
+                    : (activeMenu === 'client-dob' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white')
+                  }
                 `}
               >
                 <div className="flex items-center gap-2 truncate">
@@ -156,25 +231,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     Occurrence Book
                   </span>
                 </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-dob' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                {isSidebarOpen && !isProfileComplete ? (
+                  <Lock className="w-3 h-3 text-white/40 shrink-0" />
+                ) : (
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-dob' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                )}
               </button>
 
-              {/* Profile Settings */}
+              {/* Profile Settings - Always Accessible */}
               <button 
                 onClick={() => setActiveMenu('client-profile')}
                 title="Profile Settings"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'client-profile' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                className={`w-full flex items-center rounded-lg text-[10px] tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                  ${isSidebarOpen ? 'px-3 py-2.5 justify-between' : 'p-2.5 justify-center'}
+                  ${!isProfileComplete 
+                    ? 'bg-amber-400 text-black font-black shadow-md border-2 border-amber-300 hover:bg-amber-300' 
+                    : (activeMenu === 'client-profile' 
+                        ? 'bg-white text-[#032031] font-bold shadow-sm' 
+                        : 'hover:bg-white/10 text-white font-medium'
+                      )
+                  }
                 `}
               >
                 <div className="flex items-center gap-2 truncate">
-                  <Settings className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                  <Settings className={`w-3.5 h-3.5 shrink-0 ${!isProfileComplete ? 'text-black' : (activeMenu === 'client-profile' ? 'text-[#032031]' : 'text-white')}`} />
+                  <span className={`transition-all duration-300 ease-in-out truncate ${!isProfileComplete ? 'text-black font-black' : ''} ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
                     Profile Settings
                   </span>
                 </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-profile' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                {isSidebarOpen && !isProfileComplete ? (
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-black text-amber-300 leading-none shrink-0 tracking-wider shadow-xs animate-pulse">
+                    Required
+                  </span>
+                ) : (
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-profile' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                )}
               </button>
             </div>
           </div>
@@ -197,11 +288,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
               
               {/* Incident Reports */}
               <button 
-                onClick={() => setActiveMenu('client-incidents')}
-                title="Incident Logs"
+                onClick={() => handleMenuClick('client-incidents')}
+                disabled={!isProfileComplete}
+                title={!isProfileComplete ? "Complete profile setup to unlock" : "Incident Logs"}
                 className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
                   ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'client-incidents' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  ${!isProfileComplete 
+                    ? 'opacity-40 cursor-not-allowed hover:bg-transparent text-white/50' 
+                    : (activeMenu === 'client-incidents' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white')
+                  }
                 `}
               >
                 <div className="flex items-center gap-2 truncate">
@@ -210,7 +305,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     Incident Reports
                   </span>
                 </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-incidents' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                {isSidebarOpen && !isProfileComplete ? (
+                  <Lock className="w-3 h-3 text-white/40 shrink-0" />
+                ) : (
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-incidents' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                )}
               </button>
             </div>
           </div>

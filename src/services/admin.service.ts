@@ -59,10 +59,40 @@ export interface ClientManagementProfile {
 }
 
 export const adminService = {
-  // Fetch all guards with optional status filtering (e.g. 'PENDING_APPROVAL')
-  getGuards: (status?: string) => {
-    const query = status ? `?status=${status}` : '';
-    return api.get<{ guards: GuardProfile[] }>(`/admin/guards${query}`);
+  // Fetch guards with optional status filtering, search & pagination
+  getGuards: (params?: {
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+    export?: boolean;
+  } | string) => {
+    const query = new URLSearchParams();
+    if (typeof params === 'string') {
+      if (params && params !== 'ALL') query.append('status', params);
+    } else if (params) {
+      if (params.status && params.status !== 'ALL') query.append('status', params.status);
+      if (params.search && params.search.trim() !== '') query.append('search', params.search.trim());
+      if (params.page) query.append('page', String(params.page));
+      if (params.limit) query.append('limit', String(params.limit));
+      if (params.export) query.append('export', 'true');
+    }
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<{ 
+      guards: GuardProfile[];
+      pagination?: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
+      stats?: {
+        total: number;
+        pendingApproval: number;
+        active: number;
+        suspended: number;
+      };
+    }>(`/admin/guards${qs}`);
   },
   
   // Approve a Guard profile and update their status to ACTIVE
@@ -75,10 +105,40 @@ export const adminService = {
     return api.put<{ message: string; guard: GuardProfile }>(`/admin/guards/${id}/reject`, {});
   },
 
-  // Fetch all clients with optional status filtering (e.g. 'PENDING_APPROVAL')
-  getClients: (status?: string) => {
-    const query = status && status !== 'ALL' ? `?status=${status}` : '';
-    return api.get<{ clients: ClientManagementProfile[] }>(`/admin/clients${query}`);
+  // Fetch clients with optional status filtering, search & pagination
+  getClients: (params?: {
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+    export?: boolean;
+  } | string) => {
+    const query = new URLSearchParams();
+    if (typeof params === 'string') {
+      if (params && params !== 'ALL') query.append('status', params);
+    } else if (params) {
+      if (params.status && params.status !== 'ALL') query.append('status', params.status);
+      if (params.search && params.search.trim() !== '') query.append('search', params.search.trim());
+      if (params.page) query.append('page', String(params.page));
+      if (params.limit) query.append('limit', String(params.limit));
+      if (params.export) query.append('export', 'true');
+    }
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<{ 
+      clients: ClientManagementProfile[];
+      pagination?: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
+      stats?: {
+        total: number;
+        pendingApproval: number;
+        active: number;
+        suspended: number;
+      };
+    }>(`/admin/clients${qs}`);
   },
 
   // Approve a Client profile and update their status to ACTIVE
@@ -89,5 +149,161 @@ export const adminService = {
   // Reject/Suspend a Client profile and update their status to SUSPENDED
   rejectClient: (id: string) => {
     return api.put<{ message: string; client: ClientManagementProfile }>(`/admin/clients/${id}/reject`, {});
-  }
+  },
+
+  // Fetch all site service requests with optional filters & pagination
+  getSiteServiceRequests: (params?: {
+    status?: string;
+    urgency?: string;
+    clientId?: string;
+    type?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+    export?: boolean;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.status && params.status !== 'ALL') query.append('status', params.status);
+    if (params?.urgency && params.urgency !== 'ALL') query.append('urgency', params.urgency);
+    if (params?.clientId) query.append('clientId', params.clientId);
+    if (params?.type && params.type !== 'ALL') query.append('type', params.type);
+    if (params?.search && params.search.trim() !== '') query.append('search', params.search.trim());
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.export) query.append('export', 'true');
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<{
+      requests: AdminSiteServiceRequest[];
+      pagination?: {
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      };
+      stats?: {
+        total: number;
+        pendingReview: number;
+        underAssessment: number;
+        approved: number;
+      };
+    }>(`/admin/requests${qs}`);
+  },
+
+  // Fetch single site service request by ID
+  getSiteServiceRequestById: (id: string) => {
+    return api.get<{ request: AdminSiteServiceRequest }>(`/admin/requests/${id}`);
+  },
+
+  // Move request to UNDER_ASSESSMENT with notes
+  assessSiteServiceRequest: (id: string, adminFeedbackNotes?: string) => {
+    return api.put<{ message: string; request: AdminSiteServiceRequest }>(`/admin/requests/${id}/assess`, {
+      adminFeedbackNotes,
+    });
+  },
+
+  // Approve request and provision official physical Site with geofence
+  approveSiteServiceRequest: (id: string, payload: ApproveSiteRequestPayload) => {
+    return api.post<{ message: string; request: AdminSiteServiceRequest }>(`/admin/requests/${id}/approve`, payload);
+  },
+
+  // Reject request with mandatory feedback
+  rejectSiteServiceRequest: (id: string, adminFeedbackNotes: string) => {
+    return api.put<{ message: string; request: AdminSiteServiceRequest }>(`/admin/requests/${id}/reject`, {
+      adminFeedbackNotes,
+    });
+  },
+
+  // Fetch all physical sites
+  getAllSites: (clientId?: string) => {
+    const qs = clientId ? `?clientId=${clientId}` : '';
+    return api.get<{ sites: AdminSite[] }>(`/admin/sites${qs}`);
+  },
+
+  // Update physical site details or geofence
+  updateSite: (id: string, payload: Partial<ApproveSiteRequestPayload> & { name?: string; address?: string }) => {
+    return api.put<{ message: string; site: AdminSite }>(`/admin/sites/${id}`, payload);
+  },
 };
+
+export type ServiceRequestType = 'NEW_SITE_DEPLOYMENT' | 'EXTRA_GUARD_COVERAGE' | 'SCHEDULE_CHANGE' | 'SPECIAL_EVENT';
+export type ServiceRequestStatus = 'PENDING_REVIEW' | 'UNDER_ASSESSMENT' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+export type ServiceRequestUrgency = 'STANDARD' | 'PRIORITY' | 'EMERGENCY';
+
+export interface AdminSiteServiceRequest {
+  id: string;
+  clientId: string;
+  siteId?: string | null;
+  type: ServiceRequestType;
+  status: ServiceRequestStatus;
+  urgency: ServiceRequestUrgency;
+  propertyName: string;
+  propertyAddress: string;
+  city?: string | null;
+  postcode?: string | null;
+  suggestedLatitude?: number | string | null;
+  suggestedLongitude?: number | string | null;
+  requiredGuardsCount: number;
+  serviceStartDate: string;
+  serviceEndDate?: string | null;
+  shiftScheduleNotes?: string | null;
+  specialInstructions?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  adminFeedbackNotes?: string | null;
+  reviewedByUserId?: string | null;
+  reviewedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  client?: ClientManagementProfile | null;
+  site?: {
+    id: string;
+    name: string;
+    address: string;
+    latitude?: number | string;
+    longitude?: number | string;
+    geofenceRadiusMeters?: number;
+    siteInstructions?: string | null;
+    emergencyContact?: string | null;
+  } | null;
+}
+
+export interface AdminSite {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number | string;
+  longitude: number | string;
+  geofenceRadiusMeters: number;
+  siteInstructions?: string | null;
+  emergencyContact?: string | null;
+  client: {
+    id: string;
+    companyName: string;
+    logoUrl?: string | null;
+    urlSlug?: string | null;
+  };
+  activeOfficersCount: number;
+  activeShifts: Array<{
+    id: string;
+    guard: {
+      firstName: string;
+      lastName: string;
+      profilePictureUrl?: string | null;
+    };
+  }>;
+  totalShifts: number;
+  totalPatrolRoutes: number;
+  totalIncidents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApproveSiteRequestPayload {
+  latitude?: number;
+  longitude?: number;
+  geofenceRadiusMeters?: number;
+  siteInstructions?: string | null;
+  emergencyContact?: string | null;
+  adminFeedbackNotes?: string | null;
+}

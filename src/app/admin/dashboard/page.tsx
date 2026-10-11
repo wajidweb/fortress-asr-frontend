@@ -9,6 +9,8 @@ import Header from './Header';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
 import GuardManagement from './GuardManagement';
 import ClientManagement from './ClientManagement';
+import SiteRequestsManagement from './SiteRequestsManagement';
+import SiteManagement from './SiteManagement';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -108,15 +110,37 @@ export default function AdminDashboard() {
         <main className="flex-grow p-6 sm:p-8 overflow-y-auto bg-white">
           {activeMenu === 'guards-dash' && <GuardManagement />}
           {activeMenu === 'clients-dash' && <ClientManagement />}
+          {activeMenu === 'admin-requests' && <SiteRequestsManagement />}
+          {activeMenu === 'sites-dash' && (
+            <SiteManagement onNavigateToRequests={() => setActiveMenu('admin-requests')} />
+          )}
           {activeMenu === 'admin-dash' && (
             <div className="w-full flex flex-col gap-6">
-              <div className="w-full bg-white border-2 border-black rounded-lg p-8 flex flex-col gap-3 shadow-xs">
-                <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Fortress ASR Operations Command</span>
-                <h1 className="text-2xl font-black text-black">Welcome, {user.firstName ? `${user.firstName} ${user.lastName}` : 'System Administrator'}</h1>
-                <p className="text-xs text-black/70 font-semibold max-w-xl">
-                  Central Command & Control System for managing active security operations, officer compliance audits, and corporate client agreements.
-                </p>
+              <div className="w-full bg-white border-2 border-black rounded-lg p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
+                <div className="flex flex-col gap-2 max-w-xl">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Fortress ASR Operations Command</span>
+                  <h1 className="text-2xl font-black text-black">Welcome, {user.firstName ? `${user.firstName} ${user.lastName}` : 'System Administrator'}</h1>
+                  <p className="text-xs text-black/70 font-semibold leading-relaxed">
+                    Central Command & Control System for managing active security operations, officer compliance audits, and corporate client agreements.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  <button
+                    onClick={() => setActiveMenu('admin-requests')}
+                    className="px-4 py-2.5 bg-[#032031] text-white text-[11px] font-black uppercase tracking-wider rounded-lg hover:bg-black transition shadow-xs cursor-pointer"
+                  >
+                    Site Requests Queue
+                  </button>
+                  <button
+                    onClick={() => setActiveMenu('sites-dash')}
+                    className="px-4 py-2.5 border-2 border-black text-black text-[11px] font-black uppercase tracking-wider rounded-lg hover:bg-black/5 transition cursor-pointer"
+                  >
+                    Manage Properties
+                  </button>
+                </div>
               </div>
+
+           
             </div>
           )}
         </main>
