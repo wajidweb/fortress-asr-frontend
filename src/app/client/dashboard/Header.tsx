@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { getFullImageUrl } from '@/services/api';
-import { Menu, Search, Bell, Settings } from 'lucide-react';
+import { Menu, Bell, Settings, Maximize2, Minimize2, Clock, Calendar } from 'lucide-react';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -21,6 +21,77 @@ export const Header: React.FC<HeaderProps> = ({
   isProfileComplete = true
 }) => {
   const { user } = useAuthStore();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+
+  // Live real-time clock based on user's laptop/device time
+  useEffect(() => {
+    setCurrentTime(new Date());
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Sync state with native browser fullscreen changes (including pressing Esc)
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const doc = document as any;
+      const isFull = Boolean(
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
+      );
+      setIsFullscreen(isFull);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    const doc = document as any;
+    const docEl = document.documentElement as any;
+
+    const isFull = Boolean(
+      doc.fullscreenElement ||
+      doc.webkitFullscreenElement ||
+      doc.mozFullScreenElement ||
+      doc.msFullscreenElement
+    );
+
+    if (!isFull) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+    } else {
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      }
+    }
+  };
 
   const getHeaderTitle = () => {
     switch (activeMenu) {
@@ -48,6 +119,24 @@ export const Header: React.FC<HeaderProps> = ({
     return (first + last).toUpperCase() || 'CP';
   };
 
+  const formattedDate = currentTime
+    ? currentTime.toLocaleDateString(undefined, {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '';
+
+  const formattedTime = currentTime
+    ? currentTime.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      })
+    : '';
+
   return (
     <header className="h-16 border-b border-black/15 px-6 flex items-center justify-between select-none bg-white shrink-0">
       
@@ -70,25 +159,41 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Header Middle-Right */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 sm:gap-6">
         
-        {/* Search Box */}
-        <div className="hidden md:flex items-center relative w-64 xl:w-80 animate-fade-in">
-          <input 
-            type="text" 
-            placeholder="Search here..." 
-            className="w-full pl-9 pr-16 py-1.5 border border-black/30 rounded-lg text-[10px] font-bold focus:outline-none focus:border-black focus:ring-1 focus:ring-black placeholder:text-black/40 bg-white text-black transition-all"
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black" />
-          <div className="absolute right-2.5 flex items-center gap-1 select-none pointer-events-none">
-            <kbd className="px-1.5 py-0.5 bg-black/5 border border-black/20 text-[8px] font-black rounded uppercase text-black leading-none">⌘</kbd>
-            <kbd className="px-1.5 py-0.5 bg-black/5 border border-black/20 text-[8px] font-black rounded uppercase text-black leading-none">K</kbd>
+        {/* Real-time Operations Clock (Local Laptop / Machine Time) */}
+        <div className="hidden md:flex items-center gap-2.5 px-3 py-1.5 bg-black/5 border border-black/15 rounded-xl select-none shadow-2xs">
+          <div className="flex items-center gap-1.5 text-black">
+            <Clock className="w-3.5 h-3.5 text-black shrink-0" />
+            <span className="text-[10px] font-bold tracking-tight tabular-nums">
+              {currentTime ? formattedTime : '--:--:--'}
+            </span>
+          </div>
+          <span className="h-3 w-px bg-black/20" />
+          <div className="flex items-center gap-1.5 text-black/70">
+            <Calendar className="w-3 h-3 text-black/50 shrink-0" />
+            <span className="text-[10px] font-bold tracking-tight tabular-nums">
+              {currentTime ? formattedDate : 'Loading date...'}
+            </span>
           </div>
         </div>
 
-        {/* Header Right Action Icons */}
-        <div className="flex items-center gap-3">
-          <button className="p-1.5 hover:bg-black/5 rounded-full text-black transition animate-fade-in">
+        {/* Header Right Action Icons (Fullscreen, Bell & Settings) */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Full Screen Toggle Button */}
+          <button 
+            onClick={toggleFullscreen}
+            className="p-1.5 hover:bg-black/5 rounded-full text-black transition cursor-pointer"
+            title={isFullscreen ? "Exit Full Screen (Esc)" : "Full Screen"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4 text-black" />
+            ) : (
+              <Maximize2 className="w-4 h-4 text-black" />
+            )}
+          </button>
+
+          <button className="p-1.5 hover:bg-black/5 rounded-full text-black transition animate-fade-in" title="Notifications">
             <Bell className="w-4 h-4 text-black" />
           </button>
           <button 
