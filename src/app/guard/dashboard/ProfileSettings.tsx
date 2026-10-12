@@ -142,11 +142,15 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
         return;
       }
 
-      const allowed = /\.(jpg|jpeg|png|webp|svg)$/i;
-      if (!allowed.test(file.name)) {
+      // Allow any image format: PNG, JPG, JPEG, WEBP, GIF, SVG, BMP, TIFF, AVIF, HEIC, etc.
+      const isImage = 
+        file.type.startsWith('image/') || 
+        /\.(jpe?g|png|webp|gif|svg|bmp|tiff?|avif|heic|heif|ico)$/i.test(file.name);
+
+      if (!isImage) {
         setValidationErrors(prev => ({
           ...prev,
-          photo: 'Invalid format. Only PNG, JPG, and WEBP formats are allowed.'
+          photo: 'Invalid format. Please upload an image file (PNG, JPG, JPEG, WEBP, etc.).'
         }));
         return;
       }
@@ -176,18 +180,30 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
       if (file.size > 50 * 1024 * 1024) {
         setValidationErrors(prev => ({ 
           ...prev, 
-          rtwDocument: 'Document file exceeds 50MB size limit. Please upload a compressed scan.' 
+          rtwDocument: 'Document file exceeds 50MB size limit. Please upload a compressed document.' 
         }));
         setRtwFile(null);
         setSelectedFileName('');
         return;
       }
 
-      const allowedExtensions = /(\.jpg|\.jpeg|\.png|\.pdf)$/i;
-      if (!allowedExtensions.exec(file.name)) {
+      // Allow any format of right to work document: PDF, Word (DOC, DOCX), images (PNG, JPG, JPEG, WEBP, etc.), and other document formats
+      const isDocOrImage = 
+        file.type.startsWith('image/') ||
+        file.type === 'application/pdf' ||
+        file.type.includes('word') ||
+        file.type.includes('officedocument') ||
+        file.type.includes('msword') ||
+        file.type.includes('opendocument') ||
+        file.type === 'application/rtf' ||
+        file.type === 'text/rtf' ||
+        file.type.startsWith('text/') ||
+        /\.(pdf|docx?|odt|rtf|txt|jpe?g|png|webp|bmp|tiff?|heic|heif|gif|svg|pages|xps)$/i.test(file.name);
+
+      if (!isDocOrImage) {
         setValidationErrors(prev => ({ 
           ...prev, 
-          rtwDocument: 'Invalid format! Only JPG, PNG, and PDF documents are allowed.' 
+          rtwDocument: 'Invalid format! Please upload a PDF, DOC, DOCX, or scanned image document.' 
         }));
         setRtwFile(null);
         setSelectedFileName('');
@@ -245,7 +261,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
     }
 
     if (!formData.rtwDocumentUrl && !rtwFile) {
-      errors.rtwDocument = 'Please upload a physical copy of your Right to Work document (PDF, JPG, or PNG).';
+      errors.rtwDocument = 'Please upload a physical copy of your Right to Work document (PDF, DOC, DOCX, or scanned image).';
       isValid = false;
     }
 
@@ -433,7 +449,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
                 Officer Profile Photo
               </label>
               <span className="text-[9px] text-black/60 font-semibold">
-                Upload your official security officer portrait (PNG, JPG, or WEBP up to 10MB). This photo is displayed on supervisor dispatch rosters and site check-in credentials.
+                Upload your official security officer portrait (PNG, JPG, JPEG, WEBP, etc. up to 10MB). This photo is displayed on supervisor dispatch rosters and site check-in credentials.
               </span>
             </div>
 
@@ -446,6 +462,9 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
                     src={getFullImageUrl(photoPreview)}
                     alt="Officer Profile"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center text-black">
@@ -462,7 +481,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
                     type="file"
                     ref={photoInputRef}
                     onChange={handlePhotoChange}
-                    accept="image/png,image/jpeg,image/webp"
+                    accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.svg,.bmp,.tiff,.tif,.avif,.heic,.heif,.ico"
                     className="hidden"
                   />
                   <button
@@ -722,7 +741,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
           <div className="w-full md:col-span-2 flex flex-col gap-3 pt-3 pb-3 border-t border-black/15">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-black uppercase tracking-widest text-black">
-                Physical Right to Work Document Scan *
+                Physical Right to Work Document Scan / File *
               </label>
               {formData.rtwDocumentUrl && (
                 <a
@@ -732,7 +751,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
                   className="text-[9px] font-black uppercase tracking-wider text-black flex items-center gap-1 hover:underline cursor-pointer"
                 >
                   <ExternalLink className="w-3 h-3" />
-                  <span>View Current Scan</span>
+                  <span>View Current Document</span>
                 </a>
               )}
             </div>
@@ -742,7 +761,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
                 type="file"
                 ref={rtwFileInputRef}
                 onChange={handleRtwFileChange}
-                accept=".jpg,.jpeg,.png,.pdf"
+                accept=".pdf,.doc,.docx,.odt,.rtf,.txt,.jpg,.jpeg,.png,.webp,.bmp,.tiff,.tif,.heic,.heif,.gif,.svg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
                 className="hidden"
               />
               <button
@@ -751,15 +770,28 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
                 className="px-5 py-2.5 border border-black bg-white hover:bg-black hover:text-white text-black rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-2 transition cursor-pointer"
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>{selectedFileName ? 'Change Document File' : (formData.rtwDocumentUrl ? 'Replace Scan Document' : 'Upload Document Scan')}</span>
+                <span>{selectedFileName ? 'Change Document File' : (formData.rtwDocumentUrl ? 'Replace Document' : 'Upload Document Scan')}</span>
               </button>
 
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-black">
-                  {selectedFileName ? selectedFileName : (formData.rtwDocumentUrl ? 'Compliant document verified on record' : 'No document file selected')}
+                <span className="text-xs font-bold text-black flex items-center gap-2">
+                  {selectedFileName ? (
+                    selectedFileName
+                  ) : formData.rtwDocumentUrl ? (
+                    <>
+                      <span className="font-mono text-[11px] truncate max-w-xs">
+                        {formData.rtwDocumentUrl.split('/').pop()}
+                      </span>
+                      <span className="text-[9px] uppercase font-black text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                        On File
+                      </span>
+                    </>
+                  ) : (
+                    'No document file selected'
+                  )}
                 </span>
                 <span className="text-[9px] text-black/60 font-medium">
-                  Accepted formats: PDF, JPG, PNG (Maximum file size: 50MB)
+                  Accepted formats: PDF, DOC, DOCX, PNG, JPG, JPEG, WEBP, etc. (Maximum file size: 50MB)
                 </span>
               </div>
             </div>

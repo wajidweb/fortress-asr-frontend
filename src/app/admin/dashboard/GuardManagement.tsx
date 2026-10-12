@@ -32,6 +32,45 @@ import {
   RotateCw
 } from 'lucide-react';
 
+/**
+ * Computes deterministic guard initials for avatar fallback display
+ */
+const getGuardInitials = (guard: GuardProfile): string => {
+  const f = (guard.firstName || guard.user?.firstName || '').trim()[0] || '';
+  const l = (guard.lastName || guard.user?.lastName || '').trim()[0] || '';
+  if (f || l) return (f + l).toUpperCase();
+  if (guard.user?.email) return guard.user.email.substring(0, 2).toUpperCase();
+  return 'SO';
+};
+
+/**
+ * Analyzes document URL to determine format category, extension, and whether it can be previewed as an image
+ */
+const getDocumentInfo = (url?: string | null): { type: string; isImage: boolean; ext: string } => {
+  if (!url) return { type: 'Document', isImage: false, ext: '' };
+  const ext = (url.split('.').pop() || '').toLowerCase();
+  
+  if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tiff', 'svg', 'heic', 'avif'].includes(ext)) {
+    return { type: 'Image Scan', isImage: true, ext: ext.toUpperCase() };
+  }
+  if (ext === 'pdf') {
+    return { type: 'PDF Document', isImage: false, ext: 'PDF' };
+  }
+  if (['doc', 'docx'].includes(ext)) {
+    return { type: 'Word Document', isImage: false, ext: ext.toUpperCase() };
+  }
+  if (ext === 'odt') {
+    return { type: 'OpenDocument', isImage: false, ext: 'ODT' };
+  }
+  if (ext === 'rtf') {
+    return { type: 'Rich Text', isImage: false, ext: 'RTF' };
+  }
+  if (ext === 'txt') {
+    return { type: 'Text File', isImage: false, ext: 'TXT' };
+  }
+  return { type: 'Proof File', isImage: false, ext: ext.toUpperCase() || 'FILE' };
+};
+
 export const GuardManagement: React.FC = () => {
   const [guards, setGuards] = useState<GuardProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -401,6 +440,7 @@ export const GuardManagement: React.FC = () => {
               const displayName = `${guard.firstName || guard.user?.firstName || ''} ${guard.lastName || guard.user?.lastName || ''}`.trim() || 'Officer Account';
               const isActionLoading = actionLoadingId === guard.id || actionLoadingId === guard.userId;
               const isExpiredSia = guard.siaExpiryDate ? new Date(guard.siaExpiryDate) <= new Date() : false;
+              const docInfo = getDocumentInfo(guard.rtwDocumentUrl);
 
               return (
                 <div 
@@ -411,25 +451,26 @@ export const GuardManagement: React.FC = () => {
                   {/* Left: Avatar & Officer Info - Clickable to open modal */}
                   <div 
                     onClick={() => setSelectedGuard(guard)}
-                    className="flex items-start sm:items-center gap-5 sm:gap-6 w-full lg:w-auto cursor-pointer flex-grow"
+                    className="flex items-start sm:items-center gap-4 sm:gap-5 w-full lg:w-auto cursor-pointer flex-grow"
                     title="Click to view full officer compliance details"
                   >
                     
-                    {/* Guard Photo Avatar with right-side spacing */}
-                    <div className="w-16 h-16 rounded-xl bg-black/5 border border-black flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner group-hover:scale-105 transition mr-2 sm:mr-3">
-                      {guard.profilePictureUrl ? (
+                    {/* Guard Photo Avatar with fallback initials background */}
+                    <div className="w-16 h-16 rounded-xl bg-black/5 border border-black flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner group-hover:scale-105 transition">
+                      {/* Resilient fallback initials layer in background */}
+                      <div className="absolute inset-0 flex items-center justify-center text-black font-black text-base select-none">
+                        {getGuardInitials(guard)}
+                      </div>
+                      {guard.profilePictureUrl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img 
                           src={getFullImageUrl(guard.profilePictureUrl)} 
                           alt={displayName} 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover relative z-10"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
                         />
-                      ) : (
-                        <div className="flex flex-col items-center justify-center text-black">
-                          <span className="text-base font-black">
-                            {((guard.firstName?.[0] || guard.user?.firstName?.[0] || '') + (guard.lastName?.[0] || guard.user?.lastName?.[0] || '')).toUpperCase() || 'SO'}
-                          </span>
-                        </div>
                       )}
                     </div>
 
@@ -490,23 +531,31 @@ export const GuardManagement: React.FC = () => {
                       </div>
 
                       {/* Right to Work & Registration Line */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-black/70 font-medium mt-1">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-black/70 font-medium mt-1">
                         <span className="flex items-center gap-1 text-[10px] font-bold text-black">
                           <FileText className="w-3 h-3 text-black" />
                           <span>RTW: {guard.rtwDocumentType || 'Passport'}</span>
                         </span>
 
-                        {guard.rtwDocumentUrl && (
+                        {/* Document Evidence Link / Status Badge */}
+                        {guard.rtwDocumentUrl ? (
                           <a
                             href={getFullImageUrl(guard.rtwDocumentUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
-                            className="text-[10px] font-black text-black underline flex items-center gap-0.5 hover:text-black/70"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100 transition shadow-2xs cursor-pointer"
+                            title={`View ${docInfo.type} (${docInfo.ext})`}
                           >
-                            <span>View Scan</span>
-                            <ExternalLink className="w-2.5 h-2.5" />
+                            <FileText className="w-2.5 h-2.5 text-emerald-700 shrink-0" />
+                            <span>{docInfo.ext}: View Document</span>
+                            <ExternalLink className="w-2 h-2 text-emerald-700 shrink-0" />
                           </a>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">
+                            <AlertCircle className="w-2.5 h-2.5 text-red-600 shrink-0" />
+                            <span>No RTW File</span>
+                          </span>
                         )}
 
                         <span className="flex items-center gap-1 text-[10px] text-black/60 font-bold">
@@ -642,6 +691,7 @@ export const GuardManagement: React.FC = () => {
         const modalDisplayName = `${selectedGuard.firstName || selectedGuard.user?.firstName || ''} ${selectedGuard.lastName || selectedGuard.user?.lastName || ''}`.trim() || 'Officer Account';
         const isExpiredSia = selectedGuard.siaExpiryDate ? new Date(selectedGuard.siaExpiryDate) <= new Date() : false;
         const isActionLoading = actionLoadingId === selectedGuard.id || actionLoadingId === selectedGuard.userId;
+        const modalDocInfo = getDocumentInfo(selectedGuard.rtwDocumentUrl);
 
         return (
           <div 
@@ -690,19 +740,29 @@ export const GuardManagement: React.FC = () => {
                 <div className="bg-white border border-black/10 rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-xs">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
                     
-                    {/* Guard Photo Avatar */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-zinc-100 border border-black/15 flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative">
-                      {selectedGuard.profilePictureUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={getFullImageUrl(selectedGuard.profilePictureUrl)}
-                          alt={modalDisplayName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-[#032031] to-black text-white flex items-center justify-center font-black text-2xl tracking-wider">
-                          {((selectedGuard.firstName?.[0] || selectedGuard.user?.firstName?.[0] || '') + (selectedGuard.lastName?.[0] || selectedGuard.user?.lastName?.[0] || '')).toUpperCase() || 'SO'}
-                        </div>
+                    {/* Guard Photo Avatar with fallback background */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-zinc-100 border border-black/15 flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative group">
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#032031] to-black text-white flex items-center justify-center font-black text-2xl tracking-wider select-none">
+                        {getGuardInitials(selectedGuard)}
+                      </div>
+                      {selectedGuard.profilePictureUrl && (
+                        <a
+                          href={getFullImageUrl(selectedGuard.profilePictureUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full h-full relative z-10 block cursor-pointer"
+                          title="Click to view full officer portrait"
+                        >
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={getFullImageUrl(selectedGuard.profilePictureUrl)}
+                            alt={modalDisplayName}
+                            className="w-full h-full object-cover group-hover:opacity-90 transition"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </a>
                       )}
                     </div>
 
@@ -948,42 +1008,85 @@ export const GuardManagement: React.FC = () => {
                       </div>
 
                       {/* Document Scan Evidence Box */}
-                      <div className="p-4 bg-zinc-50 border border-black/10 rounded-xl flex flex-col gap-2.5">
+                      <div className="p-4 bg-zinc-50 border border-black/10 rounded-xl flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-black uppercase tracking-wider text-black/50">
-                            Uploaded Document Scan Evidence
+                            Uploaded Document Evidence
                           </span>
-                          {selectedGuard.rtwDocumentUrl && (
-                            <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                          {selectedGuard.rtwDocumentUrl ? (
+                            <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              Scan Verified
+                              <span>Document Verified ({modalDocInfo.ext})</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-red-700 font-bold flex items-center gap-1 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                              <AlertCircle className="w-3 h-3 text-red-600" />
+                              <span>No Verification File</span>
                             </span>
                           )}
                         </div>
 
                         {selectedGuard.rtwDocumentUrl ? (
-                          <div className="p-3 bg-white border border-black/15 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-lg bg-[#032031]/5 border border-[#032031]/15 text-[#032031] flex items-center justify-center shrink-0">
-                                <FileText className="w-5 h-5 text-[#032031]" />
+                          <div className="flex flex-col gap-2.5">
+                            <div className="p-3 bg-white border border-black/15 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-9 h-9 rounded-lg bg-[#032031]/5 border border-[#032031]/15 text-[#032031] flex items-center justify-center shrink-0">
+                                  <FileText className="w-5 h-5 text-[#032031]" />
+                                </div>
+                                <div className="flex flex-col min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-xs font-bold text-[#032031] truncate max-w-xs">
+                                      {selectedGuard.rtwDocumentUrl.split('/').pop() || selectedGuard.rtwDocumentUrl}
+                                    </span>
+                                    <span className="px-1.5 py-0.2 rounded text-[8px] font-black uppercase tracking-wider bg-black/5 text-black border border-black/10">
+                                      {modalDocInfo.ext}
+                                    </span>
+                                  </div>
+                                  <span className="text-[10px] text-black/50">
+                                    {modalDocInfo.type} • Statutory Proof of Right to Work
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-mono text-xs font-bold text-[#032031] truncate max-w-xs">
-                                  {selectedGuard.rtwDocumentUrl.split('/').pop() || selectedGuard.rtwDocumentUrl}
-                                </span>
-                                <span className="text-[10px] text-black/40">Secure statutory proof document</span>
-                              </div>
+
+                              <a
+                                href={getFullImageUrl(selectedGuard.rtwDocumentUrl)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#032031] hover:bg-black text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition shrink-0 cursor-pointer shadow-2xs"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>View Document</span>
+                              </a>
                             </div>
 
-                            <a
-                              href={getFullImageUrl(selectedGuard.rtwDocumentUrl)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#032031] hover:bg-black text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition shrink-0 cursor-pointer shadow-2xs"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              <span>View Scan</span>
-                            </a>
+                            {/* Inline Visual Scan Preview if document is an image format */}
+                            {modalDocInfo.isImage && (
+                              <div className="border border-black/10 rounded-xl overflow-hidden bg-white p-2.5 flex flex-col gap-1.5 shadow-2xs">
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-black/50 px-1">
+                                  Visual Scan Preview
+                                </span>
+                                <div className="relative rounded-lg overflow-hidden bg-black/5 max-h-56 flex items-center justify-center group cursor-pointer border border-black/5">
+                                  <img 
+                                    src={getFullImageUrl(selectedGuard.rtwDocumentUrl)} 
+                                    alt="Right to work document preview" 
+                                    className="max-h-56 w-auto object-contain transition group-hover:scale-[1.02]"
+                                    onError={(e) => {
+                                      const p = (e.target as HTMLElement).parentElement;
+                                      if (p) p.style.display = 'none';
+                                    }}
+                                  />
+                                  <a 
+                                    href={getFullImageUrl(selectedGuard.rtwDocumentUrl)} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[11px] font-black uppercase tracking-wider transition gap-1.5"
+                                  >
+                                    <ExternalLink className="w-4 h-4" />
+                                    <span>Open Full Size Scan</span>
+                                  </a>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-xs text-red-700 font-medium">
