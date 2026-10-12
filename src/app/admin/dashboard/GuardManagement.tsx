@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminService, GuardProfile } from '@/services/admin.service';
@@ -25,7 +26,6 @@ import {
   AlertCircle,
   Calendar,
   Lock,
-  DollarSign,
   Shield,
   ChevronLeft,
   ChevronRight,
@@ -455,23 +455,24 @@ export const GuardManagement: React.FC = () => {
                     title="Click to view full officer compliance details"
                   >
                     
-                    {/* Guard Photo Avatar with fallback initials background */}
+                    {/* Guard Photo Avatar */}
                     <div className="w-16 h-16 rounded-xl bg-black/5 border border-black flex items-center justify-center overflow-hidden shrink-0 relative shadow-inner group-hover:scale-105 transition">
-                      {/* Resilient fallback initials layer in background */}
-                      <div className="absolute inset-0 flex items-center justify-center text-black font-black text-base select-none">
-                        {getGuardInitials(guard)}
-                      </div>
-                      {guard.profilePictureUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
+                      {guard.profilePictureUrl ? (
                         <img 
                           src={getFullImageUrl(guard.profilePictureUrl)} 
                           alt={displayName} 
-                          className="w-full h-full object-cover relative z-10"
+                          className="w-full h-full object-cover"
                           onError={(e) => {
-                            (e.target as HTMLElement).style.display = 'none';
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement | null;
+                            if (fallback) fallback.style.display = 'flex';
                           }}
                         />
-                      )}
+                      ) : null}
+                      <div className={`w-full h-full flex items-center justify-center text-black font-black text-base select-none ${guard.profilePictureUrl ? 'hidden' : 'flex'}`}>
+                        {getGuardInitials(guard)}
+                      </div>
                     </div>
 
                     {/* Metadata & Details */}
@@ -740,30 +741,24 @@ export const GuardManagement: React.FC = () => {
                 <div className="bg-white border border-black/10 rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-xs">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full lg:w-auto">
                     
-                    {/* Guard Photo Avatar with fallback background */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-zinc-100 border border-black/15 flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative group">
-                      <div className="absolute inset-0 bg-gradient-to-br from-[#032031] to-black text-white flex items-center justify-center font-black text-2xl tracking-wider select-none">
+                    {/* Guard Photo Avatar */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-zinc-100 border border-black/15 flex items-center justify-center overflow-hidden shrink-0 shadow-inner relative">
+                      {selectedGuard.profilePictureUrl ? (
+                        <img
+                          src={getFullImageUrl(selectedGuard.profilePictureUrl)}
+                          alt={modalDisplayName}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement | null;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-full h-full bg-gradient-to-br from-[#032031] to-black text-white flex items-center justify-center font-black text-2xl tracking-wider select-none ${selectedGuard.profilePictureUrl ? 'hidden' : 'flex'}`}>
                         {getGuardInitials(selectedGuard)}
                       </div>
-                      {selectedGuard.profilePictureUrl && (
-                        <a
-                          href={getFullImageUrl(selectedGuard.profilePictureUrl)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-full h-full relative z-10 block cursor-pointer"
-                          title="Click to view full officer portrait"
-                        >
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={getFullImageUrl(selectedGuard.profilePictureUrl)}
-                            alt={modalDisplayName}
-                            className="w-full h-full object-cover group-hover:opacity-90 transition"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        </a>
-                      )}
                     </div>
 
                     {/* Metadata & Details */}
@@ -815,13 +810,8 @@ export const GuardManagement: React.FC = () => {
                           </span>
                         )}
 
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#032031]/5 border border-[#032031]/15 text-[#032031] text-[10px] font-black">
-                          <DollarSign className="w-3 h-3 text-[#032031]" />
-                          £{selectedGuard.payRatePerHour || '0.00'} / hour
-                        </span>
-
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/5 text-black/70 text-[10px] font-bold">
-                          <Calendar className="w-3 h-3 text-black/50" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#032031]/5 border border-[#032031]/15 text-[#032031] text-[10px] font-bold">
+                          <Calendar className="w-3 h-3 text-[#032031]/70" />
                           Registered: {formatDate(selectedGuard.createdAt)}
                         </span>
                       </div>
@@ -830,74 +820,58 @@ export const GuardManagement: React.FC = () => {
 
                   </div>
 
-                  {/* Right Header Status / IDs */}
-                  <div className="flex lg:flex-col items-center lg:items-end justify-between w-full lg:w-auto pt-3 lg:pt-0 border-t lg:border-t-0 border-black/10 gap-2 shrink-0">
+                  {/* Right Header Status */}
+                  <div className="flex lg:flex-col items-center lg:items-end justify-between w-full lg:w-auto pt-3 lg:pt-0 border-t lg:border-t-0 border-[#032031]/10 gap-2 shrink-0">
                     <div className="flex flex-col lg:items-end text-left lg:text-right">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Dispatch Eligibility</span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Deployment Readiness</span>
                       <span className={`text-xs font-black ${selectedGuard.status === 'ACTIVE' ? 'text-emerald-700' : 'text-amber-700'}`}>
                         {selectedGuard.status === 'ACTIVE' ? 'Ready for Deployment' : 'Awaiting Operational Approval'}
                       </span>
                     </div>
-
-                    <div className="text-[10px] text-black/50 font-mono">
-                      ID: {selectedGuard.id.slice(0, 16)}...
-                    </div>
                   </div>
                 </div>
 
-                {/* 2. Google-Style Metric Overview Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* 2. Metric Overview Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   
                   {/* Card 1: SIA Licence */}
-                  <div className="bg-white border border-black/10 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">SIA Licence Status</span>
+                  <div className="bg-white border border-[#032031]/15 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">SIA Licence Status</span>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-sm font-black text-[#032031]">
                         {isExpiredSia ? 'Expired Badge' : (selectedGuard.siaLicenceNumber ? 'Valid Licence' : 'Not Provided')}
                       </span>
                       <Award className={`w-4 h-4 ${isExpiredSia ? 'text-red-500' : 'text-amber-500'}`} />
                     </div>
-                    <span className="text-[10px] text-black/60 font-semibold truncate">
+                    <span className="text-[10px] text-[#032031]/60 font-semibold truncate">
                       {selectedGuard.siaExpiryDate ? `Expires: ${formatDate(selectedGuard.siaExpiryDate)}` : 'No expiration date'}
                     </span>
                   </div>
 
                   {/* Card 2: Right to Work */}
-                  <div className="bg-white border border-black/10 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Right to Work (RTW)</span>
+                  <div className="bg-white border border-[#032031]/15 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Right to Work (RTW)</span>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-sm font-black text-[#032031]">
                         {selectedGuard.hasIndefiniteRTW ? 'Indefinite' : (selectedGuard.rtwDocumentType || 'Documented')}
                       </span>
                       <FileText className="w-4 h-4 text-blue-600" />
                     </div>
-                    <span className="text-[10px] text-black/60 font-semibold truncate">
+                    <span className="text-[10px] text-[#032031]/60 font-semibold truncate">
                       {selectedGuard.hasIndefiniteRTW ? 'Indefinite Leave to Remain' : (selectedGuard.rightToWorkExpiryDate ? `Expires: ${formatDate(selectedGuard.rightToWorkExpiryDate)}` : 'Standard verification')}
                     </span>
                   </div>
 
-                  {/* Card 3: Hourly Pay Rate */}
-                  <div className="bg-white border border-black/10 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Standard Hourly Rate</span>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-sm font-black text-[#032031]">
-                        £{selectedGuard.payRatePerHour || '0.00'} / hr
-                      </span>
-                      <DollarSign className="w-4 h-4 text-emerald-600" />
-                    </div>
-                    <span className="text-[10px] text-black/60 font-semibold">Standard shift compensation</span>
-                  </div>
-
-                  {/* Card 4: Operational Roster */}
-                  <div className="bg-white border border-black/10 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Roster Eligibility</span>
+                  {/* Card 3: Operational Roster */}
+                  <div className="bg-white border border-[#032031]/15 rounded-xl p-4 flex flex-col gap-1 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Roster Eligibility</span>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-sm font-black text-[#032031]">
                         {selectedGuard.user?.isActive ? 'Active Dispatch' : 'Dispatch Restricted'}
                       </span>
                       <ShieldCheck className={`w-4 h-4 ${selectedGuard.user?.isActive ? 'text-emerald-600' : 'text-amber-500'}`} />
                     </div>
-                    <span className="text-[10px] text-black/60 font-semibold">
+                    <span className="text-[10px] text-[#032031]/60 font-semibold">
                       {selectedGuard.user?.isActive ? 'Authorized for site shifts' : 'Action required by HQ'}
                     </span>
                   </div>
@@ -911,8 +885,8 @@ export const GuardManagement: React.FC = () => {
                   <div className="flex flex-col gap-5">
                     
                     {/* SIA Licensing Credentials Card */}
-                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
-                      <div className="flex items-center justify-between border-b border-black/10 pb-3">
+                    <div className="bg-white border border-[#032031]/15 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <div className="flex items-center justify-between border-b border-[#032031]/10 pb-3">
                         <div className="flex items-center gap-2.5">
                           <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-700 flex items-center justify-center">
                             <Award className="w-4 h-4 text-amber-700" />
@@ -921,7 +895,7 @@ export const GuardManagement: React.FC = () => {
                             <h4 className="text-xs font-black uppercase tracking-wider text-[#032031]">
                               SIA Licensing Credentials
                             </h4>
-                            <p className="text-[10px] text-black/50 font-medium">Security Industry Authority verification</p>
+                            <p className="text-[10px] text-[#032031]/50 font-medium">Security Industry Authority verification</p>
                           </div>
                         </div>
 
@@ -937,33 +911,33 @@ export const GuardManagement: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">16-Digit Badge Number</span>
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">16-Digit Badge Number</span>
                           <span className="font-mono font-bold text-sm text-[#032031] tracking-wider">
                             {selectedGuard.siaLicenceNumber || 'Not Provided'}
                           </span>
                         </div>
 
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Licence Expiration</span>
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Licence Expiration</span>
                           <span className={`font-bold text-xs ${isExpiredSia ? 'text-red-600' : 'text-[#032031]'}`}>
                             {formatDate(selectedGuard.siaExpiryDate)}
                             {isExpiredSia && ' (EXPIRED)'}
                           </span>
                         </div>
 
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Contract Pay Rate</span>
-                          <span className="font-mono font-bold text-xs text-[#032031]">
-                            £{selectedGuard.payRatePerHour || '0.00'} / hour
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Licence Validation</span>
+                          <span className="font-bold text-xs text-[#032031]">
+                            {selectedGuard.siaLicenceNumber && !isExpiredSia ? 'Verified Active Badge' : 'Attention Required'}
                           </span>
                         </div>
 
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Regulatory Compliance</span>
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Regulatory Standard</span>
                           <span className="font-bold text-xs text-emerald-700 flex items-center gap-1.5">
                             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Compliant with UK SIA Act</span>
+                            <span>Private Security Act 2001</span>
                           </span>
                         </div>
                       </div>
@@ -1145,19 +1119,33 @@ export const GuardManagement: React.FC = () => {
                           </span>
                         </div>
 
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Account Active State</span>
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Account Status</span>
                           <span className="font-bold text-xs text-emerald-700 flex items-center gap-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             <span>{selectedGuard.user?.isActive ? 'Active User Account' : 'Account Locked'}</span>
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Registration Date</span>
+                          <span className="font-bold text-xs text-[#032031]">
+                            {formatDateTime(selectedGuard.createdAt)}
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Last Profile Update</span>
+                          <span className="font-bold text-xs text-[#032031]">
+                            {formatDateTime(selectedGuard.updatedAt)}
                           </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Emergency Contacts Card */}
-                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
-                      <div className="flex items-center gap-2.5 border-b border-black/10 pb-3">
+                    <div className="bg-white border border-[#032031]/15 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <div className="flex items-center gap-2.5 border-b border-[#032031]/10 pb-3">
                         <div className="w-8 h-8 rounded-lg bg-red-500/10 text-red-700 flex items-center justify-center">
                           <Phone className="w-4 h-4 text-red-700" />
                         </div>
@@ -1165,67 +1153,22 @@ export const GuardManagement: React.FC = () => {
                           <h4 className="text-xs font-black uppercase tracking-wider text-[#032031]">
                             Emergency Contact & Escalation
                           </h4>
-                          <p className="text-[10px] text-black/50 font-medium">Designated next of kin for incident escalation</p>
+                          <p className="text-[10px] text-[#032031]/50 font-medium">Designated next of kin for incident escalation</p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Contact Person Name</span>
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Contact Person Name</span>
                           <span className="font-bold text-xs text-[#032031]">
                             {selectedGuard.emergencyContactName || 'Not Assigned'}
                           </span>
                         </div>
 
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Emergency Phone Number</span>
+                        <div className="p-3 bg-slate-50 border border-[#032031]/10 rounded-xl flex flex-col gap-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider text-[#032031]/50">Emergency Phone Number</span>
                           <span className="font-mono font-bold text-xs text-[#032031]">
                             {selectedGuard.emergencyContactPhone || 'Not Assigned'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Immutable Audit Trail & System Records Card */}
-                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
-                      <div className="flex items-center gap-2.5 border-b border-black/10 pb-3">
-                        <div className="w-8 h-8 rounded-lg bg-zinc-100 text-[#032031] flex items-center justify-center">
-                          <Clock className="w-4 h-4 text-[#032031]" />
-                        </div>
-                        <div>
-                          <h4 className="text-xs font-black uppercase tracking-wider text-[#032031]">
-                            Compliance Audit Trail & Identifiers
-                          </h4>
-                          <p className="text-[10px] text-black/50 font-medium">System immutable audit logs and UUID tracking</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Registration Timestamp</span>
-                          <span className="font-bold text-xs text-[#032031]">
-                            {formatDateTime(selectedGuard.createdAt)}
-                          </span>
-                        </div>
-
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Last Profile Update</span>
-                          <span className="font-bold text-xs text-[#032031]">
-                            {formatDateTime(selectedGuard.updatedAt)}
-                          </span>
-                        </div>
-
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">User Account ID</span>
-                          <span className="font-mono text-[10px] text-black/75 truncate select-all">
-                            {selectedGuard.userId}
-                          </span>
-                        </div>
-
-                        <div className="p-3 bg-zinc-50 border border-black/5 rounded-xl flex flex-col gap-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider text-black/40">Guard Profile Record ID</span>
-                          <span className="font-mono text-[10px] text-black/75 truncate select-all">
-                            {selectedGuard.id}
                           </span>
                         </div>
                       </div>
@@ -1238,10 +1181,10 @@ export const GuardManagement: React.FC = () => {
               </div>
 
               {/* Modal Bottom Actions Bar */}
-              <div className="px-5 sm:px-7 py-4 border-t border-black/10 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-                <div className="flex items-center gap-2 text-black/60 text-xs font-semibold">
+              <div className="px-5 sm:px-7 py-4 border-t border-[#032031]/10 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div className="flex items-center gap-2 text-[#032031]/70 text-xs font-semibold">
                   <ShieldCheck className="w-4 h-4 text-[#032031]" />
-                  <span>SOMS statutory Right-to-Work & SIA verified audit record</span>
+                  <span>Fortress ASR • Statutory Right-to-Work & SIA Verified Audit Dossier</span>
                 </div>
 
                 <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
@@ -1273,7 +1216,7 @@ export const GuardManagement: React.FC = () => {
 
                   <button
                     onClick={() => setSelectedGuard(null)}
-                    className="px-5 py-2.5 border border-black/20 hover:border-black text-black hover:bg-black/5 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer"
+                    className="px-5 py-2.5 border border-[#032031]/20 hover:border-[#032031] text-[#032031] hover:bg-[#032031]/5 rounded-xl text-xs font-black uppercase tracking-wider transition cursor-pointer"
                   >
                     Close
                   </button>

@@ -296,12 +296,8 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({
         multipartPayload.append('rtwExpiryDate', formData.rtwExpiryDate);
       }
 
-      if (formData.emergencyContactName.trim()) {
-        multipartPayload.append('emergencyContactName', formData.emergencyContactName.trim());
-      }
-      if (formData.emergencyContactPhone.trim()) {
-        multipartPayload.append('emergencyContactPhone', formData.emergencyContactPhone.trim());
-      }
+      multipartPayload.append('emergencyContactName', formData.emergencyContactName.trim());
+      multipartPayload.append('emergencyContactPhone', formData.emergencyContactPhone.trim());
 
       // RTW Document scan attachment
       if (rtwFile) {
