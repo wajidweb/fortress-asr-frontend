@@ -43,5 +43,21 @@ export const authService = {
 
   resendVerification: async (data: { email: string }) => {
     return api.post<{ message: string }>('/auth/resend-verification', data);
-  }
+  },
+
+  verifyInvitation: async (token: string) => {
+    return api.get<{
+      valid: boolean;
+      email: string;
+      firstName: string;
+      lastName: string;
+      jobTitle: string;
+      department?: string | null;
+      template: string;
+    }>(`/auth/invitation/verify?token=${encodeURIComponent(token)}`);
+  },
+
+  acceptInvitation: async (data: { token: string; password: string }) => {
+    return api.post<{ message: string }>('/auth/invitation/accept', data);
+  },
 };

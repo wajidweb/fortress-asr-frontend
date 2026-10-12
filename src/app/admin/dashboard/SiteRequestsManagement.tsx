@@ -9,6 +9,7 @@ import {
   ApproveSiteRequestPayload
 } from '@/services/admin.service';
 import { useUIStore } from '@/store/useUIStore';
+import { useAuthStore, hasPermission } from '@/store/useAuthStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
 import { 
@@ -43,6 +44,9 @@ import {
 
 export const SiteRequestsManagement: React.FC = () => {
   const addToast = useUIStore((state) => state.addToast);
+  const currentUser = useAuthStore((state) => state.user);
+  const canAssess = hasPermission(currentUser, 'requests:assess');
+  const canApprove = hasPermission(currentUser, 'requests:approve');
 
   // Data & loading states
   const [requests, setRequests] = useState<AdminSiteServiceRequest[]>([]);
@@ -902,7 +906,7 @@ export const SiteRequestsManagement: React.FC = () => {
                         }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#032031] hover:bg-black text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition shadow-xs cursor-pointer"
                       >
-                        <span>Review & Deploy</span>
+                        <span>{canApprove ? 'Review & Deploy' : 'View Details'}</span>
                         <ArrowRight className="w-3 h-3" />
                       </button>
                     </td>
@@ -1190,15 +1194,17 @@ export const SiteRequestsManagement: React.FC = () => {
               
               {/* Left action buttons: Decline / Under Assessment */}
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsRejectModalOpen(true)}
-                  disabled={actionLoading}
-                  className="px-3.5 py-2 text-red-600 border border-red-300 hover:bg-red-50 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer"
-                >
-                  Decline Request
-                </button>
-                {selectedRequest.status === 'PENDING_REVIEW' && (
+                {canApprove && selectedRequest.status !== 'REJECTED' && selectedRequest.status !== 'APPROVED' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRejectModalOpen(true)}
+                    disabled={actionLoading}
+                    className="px-3.5 py-2 text-red-600 border border-red-300 hover:bg-red-50 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer"
+                  >
+                    Decline Request
+                  </button>
+                )}
+                {canAssess && selectedRequest.status === 'PENDING_REVIEW' && (
                   <button
                     type="button"
                     onClick={handleAssessRequest}
@@ -1220,24 +1226,30 @@ export const SiteRequestsManagement: React.FC = () => {
                   Cancel
                 </button>
 
-                <button
-                  type="submit"
-                  form="provision-form"
-                  disabled={actionLoading}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer shadow-sm text-xs"
-                >
-                  {actionLoading ? (
-                    <>
-                      <LoaderRectangle />
-                      <span>Deploying...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Confirm & Deploy Site</span>
-                    </>
-                  )}
-                </button>
+                {canApprove ? (
+                  <button
+                    type="submit"
+                    form="provision-form"
+                    disabled={actionLoading}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer shadow-sm text-xs"
+                  >
+                    {actionLoading ? (
+                      <>
+                        <LoaderRectangle />
+                        <span>Deploying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Confirm & Deploy Site</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <span className="px-4 py-2 bg-black/5 text-black/60 rounded-xl text-xs font-black uppercase tracking-wider border border-black/10 select-none">
+                    Read-Only Audit Mode
+                  </span>
+                )}
               </div>
 
             </div>

@@ -35,6 +35,17 @@ export interface GuardProfile {
   updatedAt?: string;
 }
 
+export interface StaffProfile {
+  id?: string;
+  userId?: string;
+  jobTitle?: string | null;
+  department?: string | null;
+  template?: 'FULL_OPERATIONS' | 'DISPATCHER' | 'READ_ONLY' | 'CUSTOM' | string;
+  permissions?: string[];
+  invitedAt?: string;
+  acceptedAt?: string | null;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -44,6 +55,20 @@ export interface User {
   role: 'SUPER_ADMIN' | 'SUPERVISOR' | 'GUARD' | 'CLIENT';
   guardProfile?: GuardProfile;
   clientProfile?: ClientProfile;
+  staffProfile?: StaffProfile;
+}
+
+/**
+ * Universal authorization helper to verify if a user has a specific permission
+ */
+export function hasPermission(user: User | null | undefined, permission: string): boolean {
+  if (!user) return false;
+  if (user.role === 'SUPER_ADMIN') return true;
+  if (user.role === 'SUPERVISOR') {
+    const permissions = user.staffProfile?.permissions || [];
+    return permissions.includes('*') || permissions.includes(permission);
+  }
+  return false;
 }
 
 interface AuthState {

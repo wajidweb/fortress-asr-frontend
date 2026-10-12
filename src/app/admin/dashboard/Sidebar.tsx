@@ -9,7 +9,7 @@ import {
   TrendingUp, Award, Wrench, Coins, Building2, Compass,
   ChevronLeft, ChevronRight as ChevronRightIcon
 } from 'lucide-react';
-import { User } from '@/store/useAuthStore';
+import { User, hasPermission } from '@/store/useAuthStore';
 
 interface SidebarProps {
   isSidebarOpen: boolean;
@@ -42,6 +42,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setExpandedGroups(prev => ({ ...prev, [group]: !prev[group] }));
     }
   };
+
+  // Granular Permission Computations
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
+  // Group 1: Live Monitoring
+  const canViewAttendance = hasPermission(user, 'shifts:read');
+  const canViewIncidents = hasPermission(user, 'incidents:read');
+
+  // Group 2: Workforce & Sites
+  const canViewGuards = hasPermission(user, 'guards:read');
+  const canViewClients = hasPermission(user, 'clients:read');
+  const canViewRequests = hasPermission(user, 'requests:read');
+  const canViewSites = hasPermission(user, 'sites:read');
+  const canViewRota = hasPermission(user, 'shifts:read');
+  const canViewWorkforceGroup = canViewGuards || canViewClients || canViewRequests || canViewSites || canViewRota;
+
+  // Group 3: Safety & Compliance
+  const canViewPatrols = hasPermission(user, 'patrols:read');
+  const canViewCompliance = hasPermission(user, 'guards:read');
+  const canViewEquipment = hasPermission(user, 'equipment:read');
+  const canViewSafetyGroup = canViewPatrols || canViewCompliance || canViewEquipment;
+
+  // Group 4: Finance & Reports
+  const canViewFinance = hasPermission(user, 'reports:read') || isSuperAdmin;
+  const canViewReports = hasPermission(user, 'reports:read');
+  const canViewFinanceGroup = canViewFinance || canViewReports;
+
+  // Group 5: System Controls
+  const canViewSystemGroup = isSuperAdmin;
 
   return (
     <aside className={`
@@ -128,348 +157,380 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
 
               {/* Attendance */}
-              <button 
-                onClick={() => setActiveMenu('attendance')}
-                title="Attendance"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'attendance' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Activity className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Attendance
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'attendance' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+              {canViewAttendance && (
+                <button 
+                  onClick={() => setActiveMenu('attendance')}
+                  title="Attendance"
+                  className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                    ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                    ${activeMenu === 'attendance' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  `}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Activity className="w-3.5 h-3.5 shrink-0" />
+                    <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                      Attendance
+                    </span>
+                  </div>
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'attendance' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                </button>
+              )}
 
               {/* Incident Management */}
-              <button 
-                onClick={() => setActiveMenu('incidents')}
-                title="Incident Management"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'incidents' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Incidents
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'incidents' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+              {canViewIncidents && (
+                <button 
+                  onClick={() => setActiveMenu('incidents')}
+                  title="Incident Management"
+                  className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                    ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                    ${activeMenu === 'incidents' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  `}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                      Incidents
+                    </span>
+                  </div>
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'incidents' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                </button>
+              )}
             </div>
           </div>
 
           {/* Group 2: WORKFORCE & SITES */}
-          <div className="flex flex-col gap-1 w-full">
-            {isSidebarOpen ? (
-              <div 
-                onClick={() => toggleGroup('workforce')}
-                className="flex items-center justify-between px-2 text-[8px] font-bold text-white/60 uppercase tracking-widest cursor-pointer hover:text-white transition"
-              >
-                <span>Workforce & Sites</span>
-                {expandedGroups.workforce ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
-              </div>
-            ) : (
-              <div className="h-px bg-white/10 my-2 w-full" />
-            )}
-            
-            <div className={`flex flex-col gap-0.5 transition-all duration-300 ease-in-out ${isSidebarOpen && !expandedGroups.workforce ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none' : 'max-h-96 opacity-100'}`}>
+          {canViewWorkforceGroup && (
+            <div className="flex flex-col gap-1 w-full">
+              {isSidebarOpen ? (
+                <div 
+                  onClick={() => toggleGroup('workforce')}
+                  className="flex items-center justify-between px-2 text-[8px] font-bold text-white/60 uppercase tracking-widest cursor-pointer hover:text-white transition"
+                >
+                  <span>Workforce & Sites</span>
+                  {expandedGroups.workforce ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
+                </div>
+              ) : (
+                <div className="h-px bg-white/10 my-2 w-full" />
+              )}
               
-              {/* Guard Management (SOMS simplified) */}
-              <button 
-                onClick={() => setActiveMenu('guards-dash')}
-                title="Guard Management"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'guards-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Users className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Guard Management
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'guards-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+              <div className={`flex flex-col gap-0.5 transition-all duration-300 ease-in-out ${isSidebarOpen && !expandedGroups.workforce ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none' : 'max-h-96 opacity-100'}`}>
+                
+                {/* Guard Management */}
+                {canViewGuards && (
+                  <button 
+                    onClick={() => setActiveMenu('guards-dash')}
+                    title="Guard Management"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'guards-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Users className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Guard Management
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'guards-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
 
-              {/* Client Management (SOMS simplified) */}
-              <button 
-                onClick={() => setActiveMenu('clients-dash')}
-                title="Client Management"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'clients-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <MapPin className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Client Management
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'clients-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+                {/* Client Management */}
+                {canViewClients && (
+                  <button 
+                    onClick={() => setActiveMenu('clients-dash')}
+                    title="Client Management"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'clients-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Client Management
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'clients-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
 
-              {/* Site Requests Queue */}
-              <button 
-                onClick={() => setActiveMenu('admin-requests')}
-                title="Site Service Requests"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'admin-requests' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Building2 className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Site Requests
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'admin-requests' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+                {/* Site Requests Queue */}
+                {canViewRequests && (
+                  <button 
+                    onClick={() => setActiveMenu('admin-requests')}
+                    title="Site Service Requests"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'admin-requests' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Building2 className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Site Requests
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'admin-requests' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
 
-              {/* Site Management */}
-              <button 
-                onClick={() => setActiveMenu('sites-dash')}
-                title="Monitored Property Management"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'sites-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Compass className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Site Management
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'sites-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+                {/* Site Management */}
+                {canViewSites && (
+                  <button 
+                    onClick={() => setActiveMenu('sites-dash')}
+                    title="Monitored Property Management"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'sites-dash' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Compass className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Site Management
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'sites-dash' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
 
-              {/* Rota / Shift Calendar */}
-              <button 
-                onClick={() => setActiveMenu('rota')}
-                title="Rota Management"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'rota' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Calendar className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Rota Management
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'rota' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+                {/* Rota / Shift Calendar */}
+                {canViewRota && (
+                  <button 
+                    onClick={() => setActiveMenu('rota')}
+                    title="Rota Management"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'rota' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Calendar className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Rota Management
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'rota' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Group 3: SAFETY & COMPLIANCE */}
-          <div className="flex flex-col gap-1 w-full">
-            {isSidebarOpen ? (
-              <div 
-                onClick={() => toggleGroup('safety')}
-                className="flex items-center justify-between px-2 text-[8px] font-bold text-white/60 uppercase tracking-widest cursor-pointer hover:text-white transition"
-              >
-                <span>Safety & Compliance</span>
-                {expandedGroups.safety ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
-              </div>
-            ) : (
-              <div className="h-px bg-white/10 my-2 w-full" />
-            )}
-            
-            <div className={`flex flex-col gap-0.5 transition-all duration-300 ease-in-out ${isSidebarOpen && !expandedGroups.safety ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none' : 'max-h-96 opacity-100'}`}>
+          {canViewSafetyGroup && (
+            <div className="flex flex-col gap-1 w-full">
+              {isSidebarOpen ? (
+                <div 
+                  onClick={() => toggleGroup('safety')}
+                  className="flex items-center justify-between px-2 text-[8px] font-bold text-white/60 uppercase tracking-widest cursor-pointer hover:text-white transition"
+                >
+                  <span>Safety & Compliance</span>
+                  {expandedGroups.safety ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
+                </div>
+              ) : (
+                <div className="h-px bg-white/10 my-2 w-full" />
+              )}
               
-              {/* Patrol Management */}
-              <button 
-                onClick={() => setActiveMenu('patrols')}
-                title="Patrol Management"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'patrols' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Patrol Management
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'patrols' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+              <div className={`flex flex-col gap-0.5 transition-all duration-300 ease-in-out ${isSidebarOpen && !expandedGroups.safety ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none' : 'max-h-96 opacity-100'}`}>
+                
+                {/* Patrol Management */}
+                {canViewPatrols && (
+                  <button 
+                    onClick={() => setActiveMenu('patrols')}
+                    title="Patrol Management"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'patrols' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Patrol Management
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'patrols' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
 
-              {/* Compliance */}
-              <button 
-                onClick={() => setActiveMenu('compliance')}
-                title="SIA & RTW Compliance"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'compliance' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Award className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Compliance
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'compliance' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+                {/* Compliance */}
+                {canViewCompliance && (
+                  <button 
+                    onClick={() => setActiveMenu('compliance')}
+                    title="SIA & RTW Compliance"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'compliance' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Award className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Compliance
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'compliance' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
 
-              {/* Equipment */}
-              <button 
-                onClick={() => setActiveMenu('equipment')}
-                title="Equipment"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'equipment' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Wrench className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Equipment
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'equipment' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+                {/* Equipment */}
+                {canViewEquipment && (
+                  <button 
+                    onClick={() => setActiveMenu('equipment')}
+                    title="Equipment"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'equipment' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Wrench className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Equipment
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'equipment' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Group 4: FINANCE & REPORTING */}
-          <div className="flex flex-col gap-1 w-full">
-            {isSidebarOpen ? (
-              <div 
-                onClick={() => toggleGroup('finance')}
-                className="flex items-center justify-between px-2 text-[8px] font-bold text-white/60 uppercase tracking-wider cursor-pointer hover:text-white transition"
-              >
-                <span>Finance & Reports</span>
-                {expandedGroups.finance ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
-              </div>
-            ) : (
-              <div className="h-px bg-white/10 my-2 w-full" />
-            )}
-            
-            <div className={`flex flex-col gap-0.5 transition-all duration-300 ease-in-out ${isSidebarOpen && !expandedGroups.finance ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none' : 'max-h-96 opacity-100'}`}>
+          {canViewFinanceGroup && (
+            <div className="flex flex-col gap-1 w-full">
+              {isSidebarOpen ? (
+                <div 
+                  onClick={() => toggleGroup('finance')}
+                  className="flex items-center justify-between px-2 text-[8px] font-bold text-white/60 uppercase tracking-wider cursor-pointer hover:text-white transition"
+                >
+                  <span>Finance & Reports</span>
+                  {expandedGroups.finance ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
+                </div>
+              ) : (
+                <div className="h-px bg-white/10 my-2 w-full" />
+              )}
               
-              {/* Finance & Timesheets */}
-              <button 
-                onClick={() => setActiveMenu('finance')}
-                title="Finance & Timesheets"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'finance' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Coins className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Finance & Timesheets
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'finance' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
+              <div className={`flex flex-col gap-0.5 transition-all duration-300 ease-in-out ${isSidebarOpen && !expandedGroups.finance ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none' : 'max-h-96 opacity-100'}`}>
+                
+                {/* Finance & Timesheets */}
+                {canViewFinance && (
+                  <button 
+                    onClick={() => setActiveMenu('finance')}
+                    title="Finance & Timesheets"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'finance' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <Coins className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Finance & Timesheets
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'finance' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
 
-              {/* Reports & Analytics */}
-              <button 
-                onClick={() => setActiveMenu('reports')}
-                title="Reports & Analytics"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'reports' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <TrendingUp className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Reports & Analytics
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'reports' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Group 5: SYSTEM CONTROL */}
-          <div className="flex flex-col gap-1 w-full">
-            {isSidebarOpen ? (
-              <div 
-                onClick={() => toggleGroup('system')}
-                className="flex items-center justify-between px-2 text-[8px] font-bold text-white/60 uppercase tracking-widest cursor-pointer hover:text-white transition"
-              >
-                <span>System Controls</span>
-                {expandedGroups.system ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
+                {/* Reports & Analytics */}
+                {canViewReports && (
+                  <button 
+                    onClick={() => setActiveMenu('reports')}
+                    title="Reports & Analytics"
+                    className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                      ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                      ${activeMenu === 'reports' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                    `}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <TrendingUp className="w-3.5 h-3.5 shrink-0" />
+                      <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                        Reports & Analytics
+                      </span>
+                    </div>
+                    <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'reports' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                  </button>
+                )}
               </div>
-            ) : (
-              <div className="h-px bg-white/10 my-2 w-full" />
-            )}
-            
-            <div className={`flex flex-col gap-0.5 transition-all duration-300 ease-in-out ${isSidebarOpen && !expandedGroups.system ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none' : 'max-h-96 opacity-100'}`}>
-              
-              {/* Settings (Phase 04 Company Settings - renamed to simple) */}
-              <button 
-                onClick={() => setActiveMenu('company-settings')}
-                title="Settings"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'company-settings' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Settings className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Settings
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'company-settings' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
-
-              {/* Users & Roles (Phase 03 Users & Roles) */}
-              <button 
-                onClick={() => setActiveMenu('users-roles')}
-                title="Users & Roles"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'users-roles' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Users className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Users & Roles
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'users-roles' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
-
-              {/* Audit Logs (Phase 32 Audit Logs) */}
-              <button 
-                onClick={() => setActiveMenu('audit-logs')}
-                title="Audit Logs"
-                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
-                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
-                  ${activeMenu === 'audit-logs' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
-                `}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <FileText className="w-3.5 h-3.5 shrink-0" />
-                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
-                    Audit Logs
-                  </span>
-                </div>
-                <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'audit-logs' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
-              </button>
             </div>
-          </div>
+          )}
+
+          {/* Group 5: SYSTEM CONTROL (Super Admin Only) */}
+          {user?.role === 'SUPER_ADMIN' && (
+            <div className="flex flex-col gap-1 w-full">
+              {isSidebarOpen ? (
+                <div 
+                  onClick={() => toggleGroup('system')}
+                  className="flex items-center justify-between px-2 text-[8px] font-bold text-white/60 uppercase tracking-widest cursor-pointer hover:text-white transition"
+                >
+                  <span>System Controls</span>
+                  {expandedGroups.system ? <ChevronDown className="w-2 h-2" /> : <ChevronRight className="w-2 h-2" />}
+                </div>
+              ) : (
+                <div className="h-px bg-white/10 my-2 w-full" />
+              )}
+              
+              <div className={`flex flex-col gap-0.5 transition-all duration-300 ease-in-out ${isSidebarOpen && !expandedGroups.system ? 'max-h-0 opacity-0 overflow-hidden pointer-events-none' : 'max-h-96 opacity-100'}`}>
+                
+                {/* Settings (Phase 04 Company Settings) */}
+                <button 
+                  onClick={() => setActiveMenu('company-settings')}
+                  title="Settings"
+                  className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                    ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                    ${activeMenu === 'company-settings' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  `}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Settings className="w-3.5 h-3.5 shrink-0" />
+                    <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                      Settings
+                    </span>
+                  </div>
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'company-settings' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                </button>
+
+                {/* Users & Roles (Super Admin Governance) */}
+                <button 
+                  onClick={() => setActiveMenu('users-roles')}
+                  title="Users & Roles"
+                  className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                    ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                    ${activeMenu === 'users-roles' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  `}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Users className="w-3.5 h-3.5 shrink-0" />
+                    <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                      Users & Roles
+                    </span>
+                  </div>
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'users-roles' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                </button>
+
+                {/* Audit Logs */}
+                <button 
+                  onClick={() => setActiveMenu('audit-logs')}
+                  title="Audit Logs"
+                  className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out cursor-pointer
+                    ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                    ${activeMenu === 'audit-logs' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  `}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                      Audit Logs
+                    </span>
+                  </div>
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'audit-logs' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                </button>
+              </div>
+            </div>
+          )}
 
         </nav>
       </div>

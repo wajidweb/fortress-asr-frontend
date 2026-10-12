@@ -14,6 +14,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get('registered');
+  const deactivated = searchParams.get('deactivated');
   const { user, isAuthenticated, login } = useAuthStore();
   const addToast = useUIStore((state) => state.addToast);
   
@@ -34,7 +35,7 @@ function LoginForm() {
   // Auto redirect already authenticated users to their dashboards
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'SUPER_ADMIN') {
+      if (user.role === 'SUPER_ADMIN' || user.role === 'SUPERVISOR') {
         router.push('/admin/dashboard');
       } else if (user.role === 'CLIENT') {
         router.push('/client/dashboard');
@@ -52,6 +53,14 @@ function LoginForm() {
       router.replace('/login');
     }
   }, [registered, addToast, router]);
+
+  // Trigger toast on load if user session was terminated due to account deactivation
+  useEffect(() => {
+    if (deactivated === 'true') {
+      addToast('Your account has been deactivated by administration. You have been logged out.', 'error');
+      router.replace('/login');
+    }
+  }, [deactivated, addToast, router]);
 
   // Client-side validations
   const validateForm = (): boolean => {
@@ -96,7 +105,7 @@ function LoginForm() {
       login(loggedInUser, accessToken);
       addToast('Authenticated successfully.', 'success');
       
-      if (loggedInUser.role === 'SUPER_ADMIN') {
+      if (loggedInUser.role === 'SUPER_ADMIN' || loggedInUser.role === 'SUPERVISOR') {
         router.push('/admin/dashboard');
       } else if (loggedInUser.role === 'CLIENT') {
         router.push('/client/dashboard');

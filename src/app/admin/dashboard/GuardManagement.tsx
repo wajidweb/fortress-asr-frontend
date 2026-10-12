@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminService, GuardProfile } from '@/services/admin.service';
 import { useUIStore } from '@/store/useUIStore';
+import { useAuthStore, hasPermission } from '@/store/useAuthStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
 import { 
@@ -103,6 +104,8 @@ export const GuardManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
 
   const addToast = useUIStore((state) => state.addToast);
+  const currentUser = useAuthStore((state) => state.user);
+  const canApprove = hasPermission(currentUser, 'guards:approve');
 
   // Close modal on Escape key
   useEffect(() => {
@@ -582,26 +585,34 @@ export const GuardManagement: React.FC = () => {
                       <span>Details</span>
                     </button>
 
-                    {guard.status !== 'ACTIVE' && (
-                      <button
-                        onClick={() => handleApprove(guard.id, displayName)}
-                        disabled={isActionLoading}
-                        className="px-4 py-2.5 bg-black hover:bg-black/85 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
-                      >
-                        <UserCheck className="w-3.5 h-3.5" />
-                        <span>{isActionLoading ? 'Processing...' : 'Pass / Approve'}</span>
-                      </button>
-                    )}
+                    {canApprove ? (
+                      <>
+                        {guard.status !== 'ACTIVE' && (
+                          <button
+                            onClick={() => handleApprove(guard.id, displayName)}
+                            disabled={isActionLoading}
+                            className="px-4 py-2.5 bg-black hover:bg-black/85 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                            <span>{isActionLoading ? 'Processing...' : 'Pass / Approve'}</span>
+                          </button>
+                        )}
 
-                    {guard.status !== 'SUSPENDED' && (
-                      <button
-                        onClick={() => handleReject(guard.id, displayName)}
-                        disabled={isActionLoading}
-                        className="px-4 py-2.5 border border-black hover:bg-black hover:text-white text-black rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                        <span>{isActionLoading ? 'Processing...' : 'Reject / Lock'}</span>
-                      </button>
+                        {guard.status !== 'SUSPENDED' && (
+                          <button
+                            onClick={() => handleReject(guard.id, displayName)}
+                            disabled={isActionLoading}
+                            className="px-4 py-2.5 border border-black hover:bg-black hover:text-white text-black rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                          >
+                            <Ban className="w-3.5 h-3.5" />
+                            <span>{isActionLoading ? 'Processing...' : 'Reject / Lock'}</span>
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <span className="px-3 py-2 bg-black/5 text-black/60 rounded-lg text-[9px] font-black uppercase tracking-wider border border-black/10 select-none">
+                        Read-Only
+                      </span>
                     )}
 
                   </div>
@@ -1188,7 +1199,7 @@ export const GuardManagement: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-                  {selectedGuard.status !== 'ACTIVE' && (
+                  {canApprove && selectedGuard.status !== 'ACTIVE' && (
                     <button
                       onClick={async () => {
                         await handleApprove(selectedGuard.id, modalDisplayName);
@@ -1201,7 +1212,7 @@ export const GuardManagement: React.FC = () => {
                     </button>
                   )}
 
-                  {selectedGuard.status !== 'SUSPENDED' && (
+                  {canApprove && selectedGuard.status !== 'SUSPENDED' && (
                     <button
                       onClick={async () => {
                         await handleReject(selectedGuard.id, modalDisplayName);
@@ -1212,6 +1223,12 @@ export const GuardManagement: React.FC = () => {
                       <Ban className="w-4 h-4" />
                       <span>{isActionLoading ? 'Processing...' : 'Suspend Officer'}</span>
                     </button>
+                  )}
+
+                  {!canApprove && (
+                    <span className="px-3 py-2 bg-black/5 text-black/60 rounded-lg text-xs font-black uppercase tracking-wider border border-black/10 select-none">
+                      Read-Only Audit Mode
+                    </span>
                   )}
 
                   <button

@@ -45,6 +45,16 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   if (!response.ok) {
+    if (
+      typeof window !== 'undefined' &&
+      response.status === 401 &&
+      !endpoint.includes('/auth/login') &&
+      (data?.isDeactivated || data?.error?.toLowerCase().includes('deactivated'))
+    ) {
+      localStorage.removeItem('fortress_auth_token');
+      localStorage.removeItem('fortress_user');
+      window.location.href = '/login?deactivated=true';
+    }
     throw new ApiError(response.status, data?.error || 'An error occurred', data);
   }
 

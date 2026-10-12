@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminService, ClientManagementProfile } from '@/services/admin.service';
 import { useUIStore } from '@/store/useUIStore';
+import { useAuthStore, hasPermission } from '@/store/useAuthStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
 import { 
@@ -65,6 +66,8 @@ export const ClientManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED'>('ALL');
 
   const addToast = useUIStore((state) => state.addToast);
+  const currentUser = useAuthStore((state) => state.user);
+  const canApprove = hasPermission(currentUser, 'clients:approve');
 
   // Close modal on Escape key
   useEffect(() => {
@@ -520,26 +523,34 @@ export const ClientManagement: React.FC = () => {
                       <span>Details</span>
                     </button>
 
-                    {client.status !== 'ACTIVE' && (
-                      <button
-                        onClick={() => handleApprove(client.id, displayName)}
-                        disabled={isActionLoading}
-                        className="px-4 py-2.5 bg-black hover:bg-black/85 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
-                      >
-                        <UserCheck className="w-3.5 h-3.5" />
-                        <span>{isActionLoading ? 'Processing...' : 'Approve'}</span>
-                      </button>
-                    )}
+                    {canApprove ? (
+                      <>
+                        {client.status !== 'ACTIVE' && (
+                          <button
+                            onClick={() => handleApprove(client.id, displayName)}
+                            disabled={isActionLoading}
+                            className="px-4 py-2.5 bg-black hover:bg-black/85 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer shadow-xs disabled:opacity-50"
+                          >
+                            <UserCheck className="w-3.5 h-3.5" />
+                            <span>{isActionLoading ? 'Processing...' : 'Approve'}</span>
+                          </button>
+                        )}
 
-                    {client.status !== 'SUSPENDED' && (
-                      <button
-                        onClick={() => handleReject(client.id, displayName)}
-                        disabled={isActionLoading}
-                        className="px-4 py-2.5 border border-black hover:bg-black hover:text-white text-black rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                        <span>{isActionLoading ? 'Processing...' : 'Suspend'}</span>
-                      </button>
+                        {client.status !== 'SUSPENDED' && (
+                          <button
+                            onClick={() => handleReject(client.id, displayName)}
+                            disabled={isActionLoading}
+                            className="px-4 py-2.5 border border-black hover:bg-black hover:text-white text-black rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                          >
+                            <Ban className="w-3.5 h-3.5" />
+                            <span>{isActionLoading ? 'Processing...' : 'Suspend'}</span>
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <span className="px-3 py-2 bg-black/5 text-black/60 rounded-lg text-[9px] font-black uppercase tracking-wider border border-black/10 select-none">
+                        Read-Only
+                      </span>
                     )}
 
                   </div>
@@ -1088,7 +1099,7 @@ export const ClientManagement: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-                  {selectedClient.status !== 'ACTIVE' && (
+                  {canApprove && selectedClient.status !== 'ACTIVE' && (
                     <button
                       onClick={async () => {
                         await handleApprove(selectedClient.id, selectedClient.companyName);
@@ -1101,7 +1112,7 @@ export const ClientManagement: React.FC = () => {
                     </button>
                   )}
 
-                  {selectedClient.status !== 'SUSPENDED' && (
+                  {canApprove && selectedClient.status !== 'SUSPENDED' && (
                     <button
                       onClick={async () => {
                         await handleReject(selectedClient.id, selectedClient.companyName);
@@ -1112,6 +1123,12 @@ export const ClientManagement: React.FC = () => {
                       <Ban className="w-4 h-4" />
                       <span>{isActionLoading ? 'Processing...' : 'Suspend Account'}</span>
                     </button>
+                  )}
+
+                  {!canApprove && (
+                    <span className="px-3 py-2 bg-black/5 text-black/60 rounded-lg text-xs font-black uppercase tracking-wider border border-black/10 select-none">
+                      Read-Only Audit Mode
+                    </span>
                   )}
 
                   <button

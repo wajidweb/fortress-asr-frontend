@@ -262,6 +262,46 @@ export const adminService = {
   getAuditLogById: (id: string) => {
     return api.get<{ log: AdminAuditLog }>(`/admin/audit-logs/${id}`);
   },
+
+  // Staff Management (Super Admin governance)
+  getStaff: (params?: { search?: string; template?: string; status?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.search && params.search.trim() !== '') query.append('search', params.search.trim());
+    if (params?.template && params.template !== 'ALL') query.append('template', params.template);
+    if (params?.status && params.status !== 'ALL') query.append('status', params.status);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<{ staff: StaffMember[]; stats: StaffStats; pagination: StaffPagination }>(`/admin/staff${qs}`);
+  },
+
+  inviteStaff: (payload: InviteStaffPayload) => {
+    return api.post<{ message: string; staff: StaffMember }>(`/admin/staff/invite`, payload);
+  },
+
+  updateStaffPermissions: (id: string, payload: UpdateStaffPermissionsPayload) => {
+    return api.put<{ message: string; staffProfile: any }>(`/admin/staff/${id}/permissions`, payload);
+  },
+
+  toggleStaffStatus: (id: string, isActive: boolean, reason?: string) => {
+    return api.put<{ message: string; isActive: boolean }>(`/admin/staff/${id}/status`, { isActive, reason });
+  },
+
+  resendStaffInvitation: (id: string) => {
+    return api.post<{ message: string }>(`/admin/staff/${id}/resend-invite`, {});
+  },
+
+  getAvailablePermissions: () => {
+    return api.get<{
+      templates: Record<string, string[]>;
+      availablePermissions: Array<{ id: string; label: string; category: string }>;
+    }>('/admin/staff/permissions-schema');
+  },
+
+  deleteStaff: (id: string) => {
+    return api.delete<{ message: string }>(`/admin/staff/${id}`);
+  },
 };
 
 export interface AdminAuditLog {
@@ -383,3 +423,68 @@ export interface ApproveSiteRequestPayload {
   emergencyContact?: string | null;
   adminFeedbackNotes?: string | null;
 }
+
+export interface StaffMember {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string | null;
+  role: 'SUPER_ADMIN' | 'SUPERVISOR';
+  isActive: boolean;
+  isEmailVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+  staffProfile: {
+    id?: string;
+    jobTitle: string | null;
+    department: string | null;
+    template: 'FULL_OPERATIONS' | 'DISPATCHER' | 'READ_ONLY' | 'CUSTOM' | string;
+    permissions: string[];
+    invitedAt?: string;
+    acceptedAt?: string | null;
+  } | null;
+  invitationTokens?: Array<{
+    id: string;
+    expiresAt: string;
+    usedAt: string | null;
+    createdAt: string;
+  }>;
+}
+
+export interface StaffStats {
+  totalStaff: number;
+  superAdminsCount: number;
+  supervisorsCount: number;
+  activeCount: number;
+  pendingInviteCount: number;
+  fullOperationsCount: number;
+  dispatcherCount: number;
+  readOnlyCount: number;
+}
+
+export interface StaffPagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface InviteStaffPayload {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string | null;
+  jobTitle: string;
+  department?: string | null;
+  template: 'FULL_OPERATIONS' | 'DISPATCHER' | 'READ_ONLY' | 'CUSTOM';
+  permissions?: string[];
+}
+
+export interface UpdateStaffPermissionsPayload {
+  template?: 'FULL_OPERATIONS' | 'DISPATCHER' | 'READ_ONLY' | 'CUSTOM';
+  permissions?: string[];
+  jobTitle?: string | null;
+  department?: string | null;
+}
+
