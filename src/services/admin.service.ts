@@ -302,7 +302,22 @@ export const adminService = {
   deleteStaff: (id: string) => {
     return api.delete<{ message: string }>(`/admin/staff/${id}`);
   },
+
+  // Super Admin Password Change (Settings)
+  changePassword: (payload: {
+    oldPassword?: string;
+    currentPassword?: string;
+    newPassword: string;
+    confirmPassword: string;
+  }) => {
+    return api.put<{
+      success: boolean;
+      message: string;
+    }>('/admin/security/change-password', payload);
+  },
 };
+
+
 
 export interface AdminAuditLog {
   id: string;

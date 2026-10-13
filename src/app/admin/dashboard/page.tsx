@@ -13,6 +13,8 @@ import SiteRequestsManagement from './SiteRequestsManagement';
 import SiteManagement from './SiteManagement';
 import AuditLogsManagement from './AuditLogsManagement';
 import UsersRolesManagement from './UsersRolesManagement';
+import AdminSettings from './AdminSettings';
+
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -140,6 +142,7 @@ export default function AdminDashboard() {
           )}
           {activeMenu === 'audit-logs' && user.role === 'SUPER_ADMIN' && <AuditLogsManagement />}
           {activeMenu === 'users-roles' && user.role === 'SUPER_ADMIN' && <UsersRolesManagement />}
+          {activeMenu === 'company-settings' && user.role === 'SUPER_ADMIN' && <AdminSettings />}
           {activeMenu === 'admin-dash' && (
             <div className="w-full flex flex-col gap-6">
               <div className="w-full bg-white border-2 border-black rounded-lg p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">

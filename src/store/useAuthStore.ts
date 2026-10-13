@@ -78,7 +78,9 @@ interface AuthState {
   login: (user: User, token: string) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
+  updateToken: (token: string) => void;
 }
+
 
 // Helper to safely load initial state on browser mount
 const getInitialState = () => {
@@ -129,4 +131,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       return { user: updatedUser };
     }),
+  updateToken: (token: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('fortress_auth_token', token);
+    }
+    set({ token });
+  },
 }));
+
