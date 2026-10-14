@@ -14,6 +14,7 @@ import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore, hasPermission } from '@/store/useAuthStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
+import { LocationPickerMap } from '@/components/maps';
 import { 
   Building2, 
   CheckCircle2, 
@@ -330,6 +331,9 @@ export const SiteRequestsManagement: React.FC = () => {
     setActionLoading(true);
     try {
       await adminService.approveSiteServiceRequest(selectedRequest.id, {
+        latitude: provisionForm.latitude,
+        longitude: provisionForm.longitude,
+        geofenceRadiusMeters: provisionForm.geofenceRadiusMeters,
         siteInstructions: provisionForm.siteInstructions || null,
         emergencyContact: provisionForm.emergencyContact || null,
         adminFeedbackNotes: provisionForm.adminFeedbackNotes || null,
@@ -1754,196 +1758,273 @@ export const SiteRequestsManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Physical Site Survey Report Modal (Interim Survey Notes) */}
+      {/* 6. REDESIGNED PHYSICAL SITE SURVEY REPORT MODAL (Expanded 2-Column Responsive Layout) */}
       {isSurveyModalOpen && selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border border-black rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-5xl w-full max-h-[96vh] sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-black/10 flex items-center justify-between bg-zinc-50 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-700 text-white rounded-xl">
-                  <ClipboardCheck className="w-4 h-4" />
+            {/* Modal Header: Fortress ASR Deep Navy Brand Style */}
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-black/10 flex items-center justify-between bg-[#032031] text-white shrink-0">
+              <div className="flex items-center gap-3 truncate">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/15 text-emerald-400 shrink-0">
+                  <ClipboardCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-black/50">
-                    On-Site Assessment
+                <div className="flex flex-col truncate">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-300">
+                    On-Site Assessment & Physical Survey Report
                   </span>
-                  <h3 className="text-sm sm:text-base font-black text-[#032031]">
-                    Record Site Survey Findings & GPS
+                  <h3 className="text-sm sm:text-base md:text-lg font-black text-white truncate">
+                    {selectedRequest.propertyName}
                   </h3>
                 </div>
               </div>
 
               <button
                 onClick={() => setIsSurveyModalOpen(false)}
-                className="w-8 h-8 rounded-lg border border-black/15 text-black/60 hover:text-black hover:bg-black/5 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-white/20 text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-2"
+                title="Close modal"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleSurveySubmit} className="flex-grow overflow-y-auto p-6 flex flex-col gap-4 text-xs">
+            {/* Modal Form with Responsive 2-Column Grid */}
+            <form id="survey-report-form" onSubmit={handleSurveySubmit} className="flex flex-col flex-grow overflow-hidden">
               
-              {/* Site Details Overview */}
-              <div className="p-3.5 bg-zinc-50 border border-black/10 rounded-xl flex flex-col gap-1">
-                <span className="text-[9px] font-black uppercase text-black/50">Surveyed Property</span>
-                <span className="font-bold text-[#032031] text-xs">{selectedRequest.propertyName}</span>
-                <span className="text-black/70 text-[11px]">{selectedRequest.propertyAddress}</span>
+              <div className="flex-grow overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 text-xs text-slate-800 bg-white">
+                
+                {/* Left Column (7 cols on lg): Visual Spatial Calibration & Geofence Map */}
+                <div className="lg:col-span-7 flex flex-col gap-4">
+                  
+                  {/* Property Brief Summary Card */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex flex-col truncate">
+                      <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">Target Survey Facility</span>
+                      <span className="font-black text-[#032031] text-xs sm:text-sm truncate">{selectedRequest.propertyName}</span>
+                      <span className="text-[11px] text-slate-600 truncate font-semibold">{selectedRequest.propertyAddress}</span>
+                    </div>
+                    {selectedRequest.client?.companyName && (
+                      <span className="hidden sm:inline-flex px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider bg-white border border-slate-200 text-[#032031] shrink-0">
+                        {selectedRequest.client.companyName}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Interactive GPS Geofence Map Container */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
+                    
+                    {/* Map Header with Quick GPS Actions */}
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Compass className="w-4 h-4 text-emerald-700" />
+                        <span className="font-black text-[#032031] text-xs uppercase tracking-wider">
+                          Actual On-Site GPS Location
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleGetBrowserLocation}
+                        disabled={locatingGps}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg hover:bg-emerald-100 text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50 shadow-2xs"
+                        title="Acquire live GPS coordinates from this device"
+                      >
+                        <Locate className={`w-3 h-3 ${locatingGps ? 'animate-spin' : ''}`} />
+                        <span>{locatingGps ? 'Locating...' : 'Use Device GPS'}</span>
+                      </button>
+                    </div>
+
+                    {/* High-Resolution Interactive Map */}
+                    <div className="w-full">
+                      <LocationPickerMap
+                        latitude={surveyForm.surveyLatitude ? Number(surveyForm.surveyLatitude) : 51.5074}
+                        longitude={surveyForm.surveyLongitude ? Number(surveyForm.surveyLongitude) : -0.1278}
+                        radiusMeters={surveyForm.surveyGeofenceRadiusMeters || 100}
+                        onChange={(lat, lng) => {
+                          setSurveyForm((prev) => ({
+                            ...prev,
+                            surveyLatitude: lat,
+                            surveyLongitude: lng,
+                          }));
+                        }}
+                        height="320px"
+                        zoom={17}
+                        interactive={true}
+                      />
+                    </div>
+
+                    {/* Calibrated Coordinates Readout */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-mono font-bold text-slate-700 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase text-slate-400 font-jakarta">Centerpoint:</span>
+                        <span className="text-[#032031]">
+                          {surveyForm.surveyLatitude && surveyForm.surveyLongitude 
+                            ? `${Number(surveyForm.surveyLatitude).toFixed(6)}, ${Number(surveyForm.surveyLongitude).toFixed(6)}`
+                            : '51.507400, -0.127800'}
+                        </span>
+                      </div>
+
+                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-jakarta">
+                        Pin Calibrated
+                      </span>
+                    </div>
+
+                    {/* Geofence Radius Slider & Quick Select Pills */}
+                    <div className="flex flex-col gap-2 pt-1 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-700">
+                        <span>Geofence Boundary Radius</span>
+                        <span className="text-emerald-700 font-bold font-mono text-xs">
+                          {surveyForm.surveyGeofenceRadiusMeters} meters
+                        </span>
+                      </div>
+
+                      <input
+                        type="range"
+                        min={25}
+                        max={1000}
+                        step={25}
+                        value={surveyForm.surveyGeofenceRadiusMeters}
+                        onChange={(e) => setSurveyForm({ ...surveyForm, surveyGeofenceRadiusMeters: parseInt(e.target.value, 10) })}
+                        className="w-full accent-[#032031] cursor-pointer"
+                      />
+
+                      <div className="grid grid-cols-5 gap-1.5 pt-0.5">
+                        {[50, 100, 150, 200, 500].map((radius) => (
+                          <button
+                            type="button"
+                            key={radius}
+                            onClick={() => setSurveyForm({ ...surveyForm, surveyGeofenceRadiusMeters: radius })}
+                            className={`py-1 rounded-md border text-[10px] font-black uppercase tracking-wider transition cursor-pointer text-center ${
+                              surveyForm.surveyGeofenceRadiusMeters === radius
+                                ? 'bg-[#032031] text-white border-[#032031]'
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            {radius}m
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+
+                {/* Right Column (5 cols on lg): On-Site Findings, Representative Met, and Inspection Schedule */}
+                <div className="lg:col-span-5 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-slate-200 lg:pl-6 pt-5 lg:pt-0">
+                  
+                  {/* On-Site Contact Person Card */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
+                    <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                      <Users className="w-3.5 h-3.5 text-blue-700" />
+                      Client Representative Met On-Site
+                    </span>
+
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                          Contact Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g., David Miller (Site Manager)"
+                          value={surveyForm.surveyContactName}
+                          onChange={(e) => setSurveyForm({ ...surveyForm, surveyContactName: e.target.value })}
+                          className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031] bg-white transition"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                          Direct Phone Number
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g., +44 7911 123456"
+                          value={surveyForm.surveyContactPhone}
+                          onChange={(e) => setSurveyForm({ ...surveyForm, surveyContactPhone: e.target.value })}
+                          className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031] bg-white transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Physical Survey & Assessment Findings */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
+                    <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                      <FileText className="w-3.5 h-3.5 text-emerald-700" />
+                      Survey Findings & Access Protocols
+                    </span>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                        Physical Assessment Notes
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={surveyForm.surveyNotes}
+                        onChange={(e) => setSurveyForm({ ...surveyForm, surveyNotes: e.target.value })}
+                        placeholder="Record key codes, perimeter blind spots, emergency shutoffs, guard checkpoint positions, lighting conditions..."
+                        className="p-3 border border-slate-300 rounded-xl font-medium text-xs focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031] bg-white resize-none transition"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Inspection Timestamp & Assigned Officer */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col gap-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#032031] flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-indigo-700" />
+                        Survey Execution Timestamp
+                      </span>
+                      {selectedRequest.visitAssignee && (
+                        <span className="text-[10px] font-bold text-slate-600 truncate max-w-[140px]">
+                          By: {selectedRequest.visitAssignee.firstName} {selectedRequest.visitAssignee.lastName?.charAt(0)}.
+                        </span>
+                      )}
+                    </div>
+
+                    <input
+                      type="datetime-local"
+                      value={surveyForm.surveyConductedAt}
+                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyConductedAt: e.target.value })}
+                      className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#032031] bg-white transition"
+                    />
+                    <span className="text-[10px] text-slate-500 font-medium">
+                      Saving marks this physical survey as complete and pre-populates coordinates for deployment.
+                    </span>
+                  </div>
+
+                </div>
+
               </div>
 
-              {/* GPS Coordinates Section with live Browser GPS button */}
-              <div className="p-4 rounded-xl border border-black/15 bg-white flex flex-col gap-3">
-                <div className="flex items-center justify-between border-b border-black/10 pb-2">
-                  <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5">
-                    <Compass className="w-3.5 h-3.5 text-emerald-700" />
-                    Actual On-Site GPS Location
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleGetBrowserLocation}
-                    disabled={locatingGps}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg hover:bg-emerald-100 text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
-                    title="Acquire live GPS coordinates from this device"
-                  >
-                    <Locate className={`w-3 h-3 ${locatingGps ? 'animate-spin' : ''}`} />
-                    <span>{locatingGps ? 'Locating...' : 'Use Device GPS'}</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-black">
-                      Latitude
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="e.g., 51.5074"
-                      value={surveyForm.surveyLatitude}
-                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyLatitude: e.target.value })}
-                      className="p-2.5 border border-black/30 rounded-xl font-mono text-xs focus:outline-none focus:border-[#032031] bg-white"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-black">
-                      Longitude
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      placeholder="e.g., -0.1278"
-                      value={surveyForm.surveyLongitude}
-                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyLongitude: e.target.value })}
-                      className="p-2.5 border border-black/30 rounded-xl font-mono text-xs focus:outline-none focus:border-[#032031] bg-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-black">
-                    Calibrated Geofence Radius: <span className="text-emerald-700 font-bold">{surveyForm.surveyGeofenceRadiusMeters} meters</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={25}
-                    max={1000}
-                    step={25}
-                    value={surveyForm.surveyGeofenceRadiusMeters}
-                    onChange={(e) => setSurveyForm({ ...surveyForm, surveyGeofenceRadiusMeters: parseInt(e.target.value, 10) })}
-                    className="w-full accent-[#032031] cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[9px] text-black/40 font-bold">
-                    <span>25m (Compact)</span>
-                    <span>100m (Standard)</span>
-                    <span>500m (Perimeter)</span>
-                    <span>1,000m (Industrial)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* On-Site Contact Person Met */}
-              <div className="p-4 rounded-xl border border-black/15 bg-white flex flex-col gap-3">
-                <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5 border-b border-black/10 pb-2">
-                  <Users className="w-3.5 h-3.5 text-blue-700" />
-                  Client Representative Met On-Site
+              {/* Modal Actions Footer: Fully Responsive */}
+              <div className="p-3.5 sm:p-5 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+                <span className="text-[11px] text-slate-500 font-medium hidden sm:block">
+                  Survey report will be archived in the security assessment log.
                 </span>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-black">
-                      Contact Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., David Miller (Site Manager)"
-                      value={surveyForm.surveyContactName}
-                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyContactName: e.target.value })}
-                      className="p-2.5 border border-black/30 rounded-xl text-xs focus:outline-none focus:border-[#032031] bg-white"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-black">
-                      Phone Number
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., +44 7911 123456"
-                      value={surveyForm.surveyContactPhone}
-                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyContactPhone: e.target.value })}
-                      className="p-2.5 border border-black/30 rounded-xl text-xs focus:outline-none focus:border-[#032031] bg-white"
-                    />
-                  </div>
+                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsSurveyModalOpen(false)}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 border border-slate-300 rounded-xl font-bold hover:bg-slate-100 text-slate-700 text-xs transition cursor-pointer text-center"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="survey-report-form"
+                    disabled={actionLoading}
+                    className="flex-1 sm:flex-initial px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-sm text-xs"
+                  >
+                    <ClipboardCheck className="w-4 h-4 text-emerald-200" />
+                    <span>{actionLoading ? 'Saving Report...' : 'Save Survey Report'}</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Physical Survey & Assessment Findings */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black uppercase tracking-wider text-black">
-                  Physical Site Survey Findings & Access Instructions
-                </label>
-                <textarea
-                  rows={4}
-                  value={surveyForm.surveyNotes}
-                  onChange={(e) => setSurveyForm({ ...surveyForm, surveyNotes: e.target.value })}
-                  placeholder="Record on-site findings: gate access codes, hazard points, guard checkpoint locations, CCTV coverage notes, emergency shut-off locations..."
-                  className="p-3 border border-black/30 rounded-xl font-medium focus:outline-none focus:border-[#032031] bg-white resize-none"
-                />
-              </div>
-
-              {/* Survey Conducted Date & Time */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-black">
-                  Date & Time of Physical Inspection
-                </label>
-                <input
-                  type="datetime-local"
-                  value={surveyForm.surveyConductedAt}
-                  onChange={(e) => setSurveyForm({ ...surveyForm, surveyConductedAt: e.target.value })}
-                  className="p-2.5 border border-black/30 rounded-xl text-xs focus:outline-none focus:border-[#032031] bg-white"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/10">
-                <button
-                  type="button"
-                  onClick={() => setIsSurveyModalOpen(false)}
-                  className="px-4 py-2 border border-black/20 rounded-xl font-bold hover:bg-black/5 text-black"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black uppercase tracking-wider transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-sm text-xs"
-                >
-                  <ClipboardCheck className="w-4 h-4" />
-                  <span>{actionLoading ? 'Saving Report...' : 'Save Survey Report'}</span>
-                </button>
-              </div>
             </form>
           </div>
         </div>

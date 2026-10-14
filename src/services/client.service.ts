@@ -75,10 +75,37 @@ export interface ClientSite {
       profilePictureUrl?: string | null;
     };
   }>;
+  totalShifts?: number;
   totalPatrolRoutes: number;
   totalIncidents: number;
   createdAt: string;
   updatedAt: string;
+  serviceRequest?: {
+    id: string;
+    type: ServiceRequestType;
+    status: ServiceRequestStatus;
+    urgency: ServiceRequestUrgency;
+    requiredGuardsCount: number;
+    serviceStartDate: string;
+    serviceEndDate?: string | null;
+    shiftScheduleNotes?: string | null;
+    specialInstructions?: string | null;
+    emergencyContactName?: string | null;
+    emergencyContactPhone?: string | null;
+    adminFeedbackNotes?: string | null;
+    surveyLatitude?: number | string | null;
+    surveyLongitude?: number | string | null;
+    surveyGeofenceRadiusMeters?: number | null;
+    surveyContactName?: string | null;
+    surveyContactPhone?: string | null;
+    surveyNotes?: string | null;
+    surveyConductedAt?: string | null;
+    visitAssignee?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    } | null;
+  } | null;
 }
 
 export interface CreateSiteServiceRequestPayload {

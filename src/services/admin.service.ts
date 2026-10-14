@@ -488,6 +488,7 @@ export interface AdminSite {
   totalIncidents: number;
   createdAt: string;
   updatedAt: string;
+  serviceRequest?: AdminSiteServiceRequest | null;
 }
 
 export interface ApproveSiteRequestPayload {

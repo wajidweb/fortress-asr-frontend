@@ -5,6 +5,7 @@ import { adminService, AdminSite } from '@/services/admin.service';
 import { useUIStore } from '@/store/useUIStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
+import { LocationPickerMap } from '@/components/maps';
 import { 
   Building2, 
   MapPin, 
@@ -726,6 +727,12 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
                             <span className="truncate">{site.emergencyContact}</span>
                           </div>
                         )}
+                        {site.serviceRequest?.surveyLatitude && (
+                          <div className="flex items-center gap-1 text-[9px] text-emerald-800 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md mt-1 w-fit">
+                            <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                            <span>Certified Surveyed GPS ({site.serviceRequest.surveyGeofenceRadiusMeters || 100}m)</span>
+                          </div>
+                        )}
                       </div>
                     </td>
 
@@ -757,27 +764,13 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
                     {/* GPS Coordinates & Geofence Radius */}
                     <td className="py-3.5 px-4">
                       <div className="flex flex-col gap-1 items-start">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-                            <Compass className="w-3 h-3 text-indigo-600" />
-                            {site.geofenceRadiusMeters || 100}m Radius
-                          </span>
-
-                          <a
-                            href={`https://www.google.com/maps?q=${site.latitude},${site.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex items-center gap-1 text-[9px] font-black uppercase text-indigo-700 hover:text-indigo-950 transition"
-                            title="View coordinates on Google Maps"
-                          >
-                            <span>Maps</span>
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
-                        </div>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          <Compass className="w-3 h-3 text-indigo-600" />
+                          {site.geofenceRadiusMeters || 100}m Geofence
+                        </span>
 
                         <span className="text-[10px] font-mono text-black/60 font-semibold">
-                          {Number(site.latitude).toFixed(4)}, {Number(site.longitude).toFixed(4)}
+                          {Number(site.latitude).toFixed(6)}, {Number(site.longitude).toFixed(6)}
                         </span>
                       </div>
                     </td>
@@ -817,10 +810,10 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
                           e.stopPropagation();
                           handleOpenEdit(site);
                         }}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#032031] hover:bg-black text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition shadow-xs cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#032031] hover:bg-black text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition shadow-xs cursor-pointer"
                       >
                         <Edit3 className="w-3 h-3" />
-                        <span>Edit Geofence</span>
+                        <span>View Details & Edit</span>
                       </button>
                     </td>
                   </tr>
@@ -864,199 +857,481 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
 
       </div>
 
-      {/* 4. Edit Property & Geofence Modal */}
+      {/* 4. Edit Property & Geofence Modal (Expanded 2-Column Responsive Layout with Live Satellite Map) */}
       {editingSite && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-5xl w-full max-h-[96vh] sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             
             {/* Modal Header */}
-            <div className="px-5 py-4 border-b border-black/10 flex items-center justify-between bg-[#032031] text-white shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-white/10 rounded-lg text-emerald-400">
-                  <Edit3 className="w-4 h-4" />
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-black/10 flex items-center justify-between bg-[#032031] text-white shrink-0">
+              <div className="flex items-center gap-3 truncate">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/15 text-emerald-400 shrink-0">
+                  <Edit3 className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-black text-white">
-                    Edit Monitored Property
-                  </h3>
-                  <span className="text-[10px] text-slate-300 font-semibold truncate block max-w-xs">
-                    {editingSite.name}
+                <div className="flex flex-col truncate">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-300">
+                    Geofence Calibration & Property Settings
                   </span>
+                  <h3 className="text-sm sm:text-base md:text-lg font-black text-white truncate">
+                    {editingSite.name}
+                  </h3>
                 </div>
               </div>
 
               <button
                 onClick={() => setEditingSite(null)}
-                className="w-8 h-8 rounded-lg border border-white/20 text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center transition cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-white/20 text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-2"
+                title="Close modal"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            {/* Modal Form */}
-            <form onSubmit={handleSaveEdit} className="flex-grow overflow-y-auto p-5 sm:p-6 flex flex-col gap-4 text-xs text-slate-800">
+            {/* Modal Form with Comprehensive Responsive 2-Column Grid */}
+            <form id="edit-site-form" onSubmit={handleSaveEdit} className="flex flex-col flex-grow overflow-hidden">
               
-              {/* Property Name */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-[#032031]">
-                  Property Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  placeholder="e.g., Mayfair Retail Gallery"
-                  className="p-2.5 border border-slate-300 rounded-lg font-medium text-xs focus:outline-none focus:border-[#032031] bg-white transition"
-                />
-              </div>
-
-              {/* Physical Address */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-[#032031]">
-                  Physical Address *
-                </label>
-                <textarea
-                  rows={2}
-                  required
-                  value={editForm.address}
-                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                  placeholder="Street, City, Postal Code"
-                  className="p-2.5 border border-slate-300 rounded-lg font-medium text-xs focus:outline-none focus:border-[#032031] bg-white resize-none transition"
-                />
-              </div>
-
-              {/* Coordinates Section with Live GPS Capture */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-3">
-                <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-[#032031] flex items-center gap-1.5">
-                    <Compass className="w-3.5 h-3.5 text-indigo-700" />
-                    Geofence Centerpoint (GPS)
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={handleCaptureLiveLocation}
-                    disabled={locatingGps}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-indigo-700 border border-indigo-200 rounded-md hover:bg-indigo-50 text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
-                    title="Acquire live device coordinates"
-                  >
-                    <Locate className={`w-3 h-3 ${locatingGps ? 'animate-spin' : ''}`} />
-                    <span>{locatingGps ? 'Locating...' : 'Use My GPS'}</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
-                      Latitude
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      required
-                      value={editForm.latitude}
-                      onChange={(e) => setEditForm({ ...editForm, latitude: parseFloat(e.target.value) || 0 })}
-                      className="p-2 border border-slate-300 rounded-lg font-mono text-xs focus:outline-none focus:border-[#032031] bg-white"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
-                      Longitude
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      required
-                      value={editForm.longitude}
-                      onChange={(e) => setEditForm({ ...editForm, longitude: parseFloat(e.target.value) || 0 })}
-                      className="p-2 border border-slate-300 rounded-lg font-mono text-xs focus:outline-none focus:border-[#032031] bg-white"
-                    />
-                  </div>
-                </div>
-
-                {/* Radius Pills */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-600 flex items-center justify-between">
-                    <span>Geofence Radius Threshold</span>
-                    <span className="text-indigo-700 font-bold">{editForm.geofenceRadiusMeters} meters</span>
-                  </label>
+              <div className="flex-grow overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 text-xs text-slate-800 bg-white">
+                
+                {/* Left Column (7 cols on lg): Live Spatial Geofence, Location Analytics & Client Profile */}
+                <div className="lg:col-span-7 flex flex-col gap-4">
                   
-                  <div className="grid grid-cols-5 gap-1.5">
-                    {[50, 100, 150, 200, 500].map((radius) => (
+                  {/* Client Organization & Contract Identity */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3 truncate">
+                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-xs font-black overflow-hidden relative shrink-0 text-[#032031]">
+                        {editingSite.client?.logoUrl ? (
+                          <img src={getFullImageUrl(editingSite.client.logoUrl)} alt="Client" className="w-full h-full object-cover" />
+                        ) : (
+                          editingSite.client?.companyName?.[0] || 'C'
+                        )}
+                      </div>
+                      <div className="flex flex-col truncate">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">Client Organization</span>
+                        <span className="font-black text-[#032031] text-xs sm:text-sm truncate">{editingSite.client?.companyName || 'Corporate Client'}</span>
+                        <span className="text-[10px] text-slate-500 truncate font-mono">
+                          ID: {editingSite.client?.id?.slice(0, 12)}...
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider bg-white border border-slate-200 text-[#032031]">
+                        Active Facility
+                      </span>
+                      {editingSite.createdAt && (
+                        <span className="text-[9px] text-slate-400 font-semibold hidden sm:inline">
+                          Created {new Date(editingSite.createdAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Interactive GPS Geofence Map Section */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
+                    
+                    {/* Map Header with GPS Capture */}
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2 flex-wrap gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Compass className="w-4 h-4 text-emerald-700" />
+                        <span className="font-black text-[#032031] text-xs uppercase tracking-wider">
+                          Geofence Perimeter & Spatial Satellite Map
+                        </span>
+                      </div>
+
                       <button
                         type="button"
-                        key={radius}
-                        onClick={() => setEditForm({ ...editForm, geofenceRadiusMeters: radius })}
-                        className={`py-1.5 rounded-lg border text-[11px] font-bold transition cursor-pointer text-center
-                          ${editForm.geofenceRadiusMeters === radius
-                            ? 'bg-[#032031] text-white border-[#032031]'
-                            : 'bg-white text-slate-700 border-slate-300 hover:border-slate-400'
-                          }
-                        `}
+                        onClick={handleCaptureLiveLocation}
+                        disabled={locatingGps}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg hover:bg-emerald-100 text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50 shadow-2xs"
+                        title="Acquire live device coordinates"
                       >
-                        {radius}m
+                        <Locate className={`w-3 h-3 ${locatingGps ? 'animate-spin' : ''}`} />
+                        <span>{locatingGps ? 'Locating...' : 'Use My GPS'}</span>
                       </button>
-                    ))}
+                    </div>
+
+                    {/* Interactive Leaflet Map with Satellite Imagery */}
+                    <div className="w-full">
+                      <LocationPickerMap
+                        latitude={editForm.latitude}
+                        longitude={editForm.longitude}
+                        radiusMeters={editForm.geofenceRadiusMeters}
+                        onChange={(lat, lng) => {
+                          setEditForm((prev) => ({
+                            ...prev,
+                            latitude: lat,
+                            longitude: lng,
+                          }));
+                        }}
+                        height="300px"
+                        zoom={17}
+                        interactive={true}
+                      />
+                    </div>
+
+                    {/* Coordinates Readout */}
+                    <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-mono font-bold text-slate-700 flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase text-slate-400 font-jakarta">Centerpoint:</span>
+                        <span className="text-[#032031]">
+                          {Number(editForm.latitude).toFixed(6)}, {Number(editForm.longitude).toFixed(6)}
+                        </span>
+                      </div>
+
+                      <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-jakarta">
+                        Geofence Validated
+                      </span>
+                    </div>
+
+                    {/* Geofence Radius Slider & Quick Select Pills */}
+                    <div className="flex flex-col gap-2 pt-1 border-t border-slate-100">
+                      <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-700">
+                        <span>Check-In Perimeter Threshold</span>
+                        <span className="text-emerald-700 font-bold font-mono text-xs">
+                          {editForm.geofenceRadiusMeters} meters
+                        </span>
+                      </div>
+
+                      <input
+                        type="range"
+                        min={25}
+                        max={1000}
+                        step={25}
+                        value={editForm.geofenceRadiusMeters}
+                        onChange={(e) => setEditForm({ ...editForm, geofenceRadiusMeters: parseInt(e.target.value, 10) })}
+                        className="w-full accent-[#032031] cursor-pointer"
+                      />
+
+                      <div className="grid grid-cols-5 gap-1.5 pt-0.5">
+                        {[50, 100, 150, 200, 500].map((radius) => (
+                          <button
+                            type="button"
+                            key={radius}
+                            onClick={() => setEditForm({ ...editForm, geofenceRadiusMeters: radius })}
+                            className={`py-1 rounded-md border text-[10px] font-black uppercase tracking-wider transition cursor-pointer text-center ${
+                              editForm.geofenceRadiusMeters === radius
+                                ? 'bg-[#032031] text-white border-[#032031]'
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            {radius}m
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                   </div>
-                </div>
-              </div>
 
-              {/* Emergency Contact */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-[#032031]">
-                  Emergency Contact
-                </label>
-                <input
-                  type="text"
-                  value={editForm.emergencyContact}
-                  onChange={(e) => setEditForm({ ...editForm, emergencyContact: e.target.value })}
-                  placeholder="e.g., Control Room - 020 7946 0192"
-                  className="p-2.5 border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:border-[#032031] bg-white transition"
-                />
-              </div>
+                  {/* Certified On-Site Physical Survey Report Card (100% Accurate Ground Truth) */}
+                  {editingSite.serviceRequest?.surveyLatitude && (
+                    <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/50 flex flex-col gap-3 shadow-2xs">
+                      <div className="flex items-center justify-between border-b border-emerald-200 pb-2">
+                        <div className="flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-emerald-800" />
+                          <span className="font-black text-emerald-950 text-xs uppercase tracking-wider">
+                            Certified On-Site Survey Report
+                          </span>
+                        </div>
 
-              {/* Site Standing Orders */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-[#032031]">
-                  Site Standing Orders (Visible to On-Site Guards)
-                </label>
-                <textarea
-                  rows={2}
-                  value={editForm.siteInstructions}
-                  onChange={(e) => setEditForm({ ...editForm, siteInstructions: e.target.value })}
-                  placeholder="Access key codes, alarm protocols, guard post positions..."
-                  className="p-2.5 border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:border-[#032031] bg-white resize-none transition"
-                />
-              </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (editingSite.serviceRequest?.surveyLatitude && editingSite.serviceRequest?.surveyLongitude) {
+                              setEditForm((prev) => ({
+                                ...prev,
+                                latitude: Number(editingSite.serviceRequest!.surveyLatitude),
+                                longitude: Number(editingSite.serviceRequest!.surveyLongitude),
+                                geofenceRadiusMeters: Number(editingSite.serviceRequest!.surveyGeofenceRadiusMeters || 100),
+                              }));
+                              addToast('Applied certified survey coordinates to active map!', 'success');
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer shadow-2xs"
+                          title="Sync map coordinates to physical survey findings"
+                        >
+                          Use Survey GPS
+                        </button>
+                      </div>
 
-              {/* Modal Actions Footer */}
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setEditingSite(null)}
-                  className="px-4 py-2 border border-slate-300 rounded-xl font-bold text-xs hover:bg-slate-100 text-slate-700 transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#032031] hover:bg-black text-white font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 text-xs shadow-xs cursor-pointer"
-                >
-                  {saving ? (
-                    <>
-                      <LoaderRectangle />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      <span>Save Changes</span>
-                    </>
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black uppercase text-emerald-900/60">Surveyed Centerpoint</span>
+                          <span className="font-mono font-bold text-emerald-950">
+                            {Number(editingSite.serviceRequest.surveyLatitude).toFixed(6)}, {Number(editingSite.serviceRequest.surveyLongitude).toFixed(6)}
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black uppercase text-emerald-900/60">Surveyed Radius</span>
+                          <span className="font-bold text-emerald-950">
+                            {editingSite.serviceRequest.surveyGeofenceRadiusMeters || 100} meters
+                          </span>
+                        </div>
+                      </div>
+
+                      {editingSite.serviceRequest.surveyContactName && (
+                        <div className="flex flex-col text-[11px] pt-1 border-t border-emerald-200">
+                          <span className="text-[9px] font-black uppercase text-emerald-900/60">Site Contact Met On-Site</span>
+                          <span className="font-bold text-emerald-950">
+                            {editingSite.serviceRequest.surveyContactName} {editingSite.serviceRequest.surveyContactPhone ? `(${editingSite.serviceRequest.surveyContactPhone})` : ''}
+                          </span>
+                        </div>
+                      )}
+
+                      {editingSite.serviceRequest.surveyNotes && (
+                        <div className="flex flex-col text-[11px] pt-1 border-t border-emerald-200">
+                          <span className="text-[9px] font-black uppercase text-emerald-900/60">Physical Inspection Notes & Findings</span>
+                          <p className="text-slate-800 font-medium whitespace-pre-wrap mt-0.5 bg-white/70 p-2 rounded-lg border border-emerald-200/60">
+                            {editingSite.serviceRequest.surveyNotes}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-[10px] text-emerald-900/70 pt-1 font-medium">
+                        {editingSite.serviceRequest.visitAssignee && (
+                          <span>Inspected By: {editingSite.serviceRequest.visitAssignee.firstName} {editingSite.serviceRequest.visitAssignee.lastName}</span>
+                        )}
+                        {editingSite.serviceRequest.surveyConductedAt && (
+                          <span>{new Date(editingSite.serviceRequest.surveyConductedAt).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
                   )}
-                </button>
+
+                </div>
+
+                {/* Right Column (5 cols on lg): Property Configurations, Standing Orders, Live Personnel & Stats */}
+                <div className="lg:col-span-5 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-slate-200 lg:pl-6 pt-5 lg:pt-0">
+                  
+                  {/* Originating Service Request Specifications */}
+                  {editingSite.serviceRequest && (
+                    <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col gap-2.5 shadow-2xs">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                        <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5">
+                          <FileText className="w-3.5 h-3.5 text-indigo-700" />
+                          Originating Service Request
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-wider text-indigo-800 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
+                          {editingSite.serviceRequest.type} &bull; {editingSite.serviceRequest.urgency}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black uppercase text-slate-500">Required Officers</span>
+                          <span className="font-bold text-[#032031]">{editingSite.serviceRequest.requiredGuardsCount} Officer(s)</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black uppercase text-slate-500">Contract Term</span>
+                          <span className="font-bold text-[#032031]">
+                            {new Date(editingSite.serviceRequest.serviceStartDate).toLocaleDateString()}
+                            {editingSite.serviceRequest.serviceEndDate ? ` - ${new Date(editingSite.serviceRequest.serviceEndDate).toLocaleDateString()}` : ' (Ongoing)'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {editingSite.serviceRequest.shiftScheduleNotes && (
+                        <div className="flex flex-col text-[11px]">
+                          <span className="text-[9px] font-black uppercase text-slate-500">Client Shift Notes</span>
+                          <span className="text-slate-700 font-medium">{editingSite.serviceRequest.shiftScheduleNotes}</span>
+                        </div>
+                      )}
+
+                      {editingSite.serviceRequest.specialInstructions && (
+                        <div className="flex flex-col text-[11px]">
+                          <span className="text-[9px] font-black uppercase text-slate-500">Client Special Instructions</span>
+                          <span className="text-slate-700 font-medium">{editingSite.serviceRequest.specialInstructions}</span>
+                        </div>
+                      )}
+
+                      {editingSite.serviceRequest.adminFeedbackNotes && (
+                        <div className="flex flex-col text-[11px] pt-1 border-t border-slate-200">
+                          <span className="text-[9px] font-black uppercase text-slate-500">Admin Deployment Review Notes</span>
+                          <span className="text-slate-700 font-medium">{editingSite.serviceRequest.adminFeedbackNotes}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Property Identification */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
+                    <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                      <Building2 className="w-3.5 h-3.5 text-[#032031]" />
+                      Property Identification
+                    </span>
+
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                          Property Name *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={editForm.name}
+                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                          placeholder="e.g., Mayfair Retail Gallery"
+                          className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031] bg-white transition"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                          Full Physical Address *
+                        </label>
+                        <textarea
+                          rows={2}
+                          required
+                          value={editForm.address}
+                          onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                          placeholder="Street, City, Postal Code"
+                          className="p-2.5 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-[#032031] bg-white resize-none transition"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Duty Emergency Contact */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
+                    <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                      <Phone className="w-3.5 h-3.5 text-blue-700" />
+                      Duty Emergency Escalation
+                    </span>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                        Emergency Hotline / Manager Phone
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.emergencyContact}
+                        onChange={(e) => setEditForm({ ...editForm, emergencyContact: e.target.value })}
+                        placeholder="e.g., Control Room - 020 7946 0192"
+                        className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-[#032031] bg-white transition"
+                      />
+                      <span className="text-[10px] text-slate-500">
+                        Accessible by guards during active shift emergency escalation.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Site Standing Orders */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
+                    <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                      <FileText className="w-3.5 h-3.5 text-emerald-700" />
+                      Site Standing Orders & Guard Protocols
+                    </span>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                        Access Codes, Patrol Instructions & Hazard Notes
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={editForm.siteInstructions}
+                        onChange={(e) => setEditForm({ ...editForm, siteInstructions: e.target.value })}
+                        placeholder="Key safe access codes, perimeter patrol intervals, alarm protocols, gate opening hours..."
+                        className="p-2.5 border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:border-[#032031] bg-white resize-none transition"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Active Guards On-Site Roster */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col gap-2 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#032031] flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-emerald-700" />
+                        Live Guard Roster
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-600">
+                        {editingSite.activeOfficersCount > 0 ? (
+                          <span className="inline-flex items-center gap-1.5 text-emerald-700 font-bold">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            {editingSite.activeOfficersCount} On Duty
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">0 Active Guards</span>
+                        )}
+                      </span>
+                    </div>
+
+                    {editingSite.activeShifts && editingSite.activeShifts.length > 0 ? (
+                      <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-200">
+                        {editingSite.activeShifts.map((shift: any) => (
+                          <div key={shift.id} className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200 text-xs">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-[#032031] text-white flex items-center justify-center text-[10px] font-bold">
+                                {shift.guard?.firstName?.[0] || 'G'}
+                              </div>
+                              <span className="font-bold text-[#032031]">
+                                {shift.guard?.firstName} {shift.guard?.lastName}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              Clocked In
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-500 italic">
+                        No security officers are currently clocked in at this property.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Comprehensive Operational Dossier & Stats */}
+                  <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 grid grid-cols-3 gap-2 text-center shadow-2xs">
+                    <div className="flex flex-col p-2 bg-white rounded-lg border border-slate-200">
+                      <span className="text-[9px] font-black uppercase text-slate-400">Total Shifts</span>
+                      <span className="text-sm font-black text-[#032031]">{editingSite.totalShifts || 0}</span>
+                    </div>
+                    <div className="flex flex-col p-2 bg-white rounded-lg border border-slate-200">
+                      <span className="text-[9px] font-black uppercase text-slate-400">Incidents</span>
+                      <span className="text-sm font-black text-rose-700">{editingSite.totalIncidents || 0}</span>
+                    </div>
+                    <div className="flex flex-col p-2 bg-white rounded-lg border border-slate-200">
+                      <span className="text-[9px] font-black uppercase text-slate-400">Patrol Routes</span>
+                      <span className="text-sm font-black text-indigo-700">{editingSite.totalPatrolRoutes || 0}</span>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Modal Actions Footer: Fully Responsive */}
+              <div className="p-3.5 sm:p-5 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+                <span className="text-[11px] text-slate-500 font-medium hidden sm:block">
+                  Perimeter adjustments apply immediately to active guard GPS validation.
+                </span>
+
+                <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSite(null)}
+                    className="flex-1 sm:flex-initial px-4 py-2.5 border border-slate-300 rounded-xl font-bold hover:bg-slate-100 text-slate-700 text-xs transition cursor-pointer text-center"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="edit-site-form"
+                    disabled={saving}
+                    className="flex-1 sm:flex-initial px-6 py-2.5 bg-[#032031] hover:bg-black text-white rounded-xl font-black uppercase tracking-wider transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-sm text-xs"
+                  >
+                    {saving ? (
+                      <>
+                        <LoaderRectangle />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
             </form>

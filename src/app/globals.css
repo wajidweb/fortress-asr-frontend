@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;
@@ -11,3 +12,9 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Hide Leaflet watermark and attribution prefix text */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
