@@ -130,6 +130,7 @@ export default function AdminDashboard() {
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
         />
 
         {/* Content Area */}

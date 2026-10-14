@@ -8,12 +8,14 @@ interface HeaderProps {
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
   activeMenu: string;
+  setActiveMenu?: (menu: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   isSidebarOpen,
   setIsSidebarOpen,
-  activeMenu
+  activeMenu,
+  setActiveMenu
 }) => {
   const { user } = useAuthStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -201,10 +203,19 @@ export const Header: React.FC<HeaderProps> = ({
           <button className="p-1.5 hover:bg-slate-100 rounded-full text-black transition cursor-pointer" title="Notifications">
             <Bell className="w-4 h-4 text-[#032031]" />
           </button>
-          {/* Settings icon */}
-          <button className="p-1.5 hover:bg-slate-100 rounded-full text-black transition cursor-pointer" title="Settings">
-            <Settings className="w-4 h-4 text-[#032031]" />
-          </button>
+
+          {/* Settings icon - Only visible to Super Admin */}
+          {user?.role === 'SUPER_ADMIN' && (
+            <button 
+              onClick={() => setActiveMenu && setActiveMenu('company-settings')}
+              className={`p-1.5 rounded-full text-black transition cursor-pointer ${
+                activeMenu === 'company-settings' ? 'bg-slate-200' : 'hover:bg-slate-100'
+              }`}
+              title="Settings"
+            >
+              <Settings className="w-4 h-4 text-[#032031]" />
+            </button>
+          )}
         </div>
 
         {/* User Account Info capsule (Matching Ryder Collins profile row) */}

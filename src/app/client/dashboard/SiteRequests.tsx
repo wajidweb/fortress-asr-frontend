@@ -743,7 +743,17 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
 
                     {/* Status badge */}
                     <td className="py-3.5 px-4">
-                      {getStatusBadge(req.status)}
+                      <div className="flex flex-col gap-1 items-start">
+                        {getStatusBadge(req.status)}
+                        {req.visitScheduledAt && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-md">
+                            <Calendar className="w-2.5 h-2.5" />
+                            <span>
+                              Site Visit: {new Date(req.visitScheduledAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                            </span>
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Actions */}
@@ -1492,6 +1502,61 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
               {/* Right Column (6 cols on lg) */}
               <div className="lg:col-span-6 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-black/15 lg:pl-6 pt-5 lg:pt-0">
                 
+                {/* Physical Site Visit & Assessment Card */}
+                {selectedRequest.visitScheduledAt && (
+                  <div className="border border-indigo-200 rounded-xl p-4 bg-indigo-50/70 flex flex-col gap-3 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-indigo-200/80 pb-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-indigo-700" />
+                        Physical Site Visit Scheduled
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                        selectedRequest.visitStatus === 'COMPLETED'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}>
+                        {selectedRequest.visitStatus === 'COMPLETED' ? 'Survey Completed' : 'Survey Scheduled'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-[11px]">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] uppercase font-bold text-indigo-800/70">Assigned Security Officer</span>
+                        <span className="font-black text-indigo-950 text-xs">
+                          {selectedRequest.visitAssignee
+                            ? `${selectedRequest.visitAssignee.firstName} ${selectedRequest.visitAssignee.lastName}`
+                            : 'Operations Surveyor'}
+                        </span>
+                        {selectedRequest.visitAssignee?.email && (
+                          <span className="text-[10px] text-indigo-800/80 font-medium">{selectedRequest.visitAssignee.email}</span>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col">
+                        <span className="text-[9px] uppercase font-bold text-indigo-800/70">Scheduled Visit Date</span>
+                        <span className="font-black text-indigo-950 text-xs">
+                          {new Date(selectedRequest.visitScheduledAt).toLocaleDateString('en-GB', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        <span className="text-[10px] text-indigo-800/80 font-medium">
+                          {new Date(selectedRequest.visitScheduledAt).toLocaleTimeString('en-GB', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 bg-white/80 border border-indigo-200/60 rounded-lg text-[10px] text-indigo-950/80 font-medium leading-relaxed">
+                      Our security officer will physically visit your property at the scheduled time to survey perimeter boundaries and calibrate the exact geofence prior to deploying officers.
+                    </div>
+                  </div>
+                )}
+
                 {/* Security Operations / Control Room Review Card */}
                 {(selectedRequest.adminFeedbackNotes || selectedRequest.status === 'APPROVED') && (
                   <div className="border border-black/15 rounded-xl p-4 bg-zinc-50 flex flex-col gap-3 shadow-2xs">

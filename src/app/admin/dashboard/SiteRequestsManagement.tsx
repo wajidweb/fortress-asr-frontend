@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   adminService, 
   AdminSiteServiceRequest, 
+  AdminVisitAssignee,
+  RecordSurveyNotesPayload,
   ServiceRequestStatus, 
   ServiceRequestUrgency,
   ApproveSiteRequestPayload
@@ -39,7 +41,10 @@ import {
   AlertCircle,
   Printer,
   Download,
-  RotateCw
+  RotateCw,
+  RotateCcw,
+  Locate,
+  ClipboardCheck
 } from 'lucide-react';
 
 export const SiteRequestsManagement: React.FC = () => {
@@ -95,6 +100,36 @@ export const SiteRequestsManagement: React.FC = () => {
 
   // Assessment Notes
   const [assessmentNotes, setAssessmentNotes] = useState('');
+
+  // Physical Site Visit Modal State
+  const [assignees, setAssignees] = useState<AdminVisitAssignee[]>([]);
+  const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
+  const [visitForm, setVisitForm] = useState({
+    visitAssigneeId: '',
+    visitScheduledAt: '',
+    adminFeedbackNotes: '',
+  });
+
+  // Interim Site Survey Modal State
+  const [isSurveyModalOpen, setIsSurveyModalOpen] = useState(false);
+  const [locatingGps, setLocatingGps] = useState(false);
+  const [surveyForm, setSurveyForm] = useState<{
+    surveyLatitude: string | number;
+    surveyLongitude: string | number;
+    surveyGeofenceRadiusMeters: number;
+    surveyContactName: string;
+    surveyContactPhone: string;
+    surveyNotes: string;
+    surveyConductedAt: string;
+  }>({
+    surveyLatitude: '',
+    surveyLongitude: '',
+    surveyGeofenceRadiusMeters: 100,
+    surveyContactName: '',
+    surveyContactPhone: '',
+    surveyNotes: '',
+    surveyConductedAt: '',
+  });
 
   // Row Selection State for Targeted Export / Print
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -181,13 +216,111 @@ export const SiteRequestsManagement: React.FC = () => {
 
   const handleOpenDeployModal = (req: AdminSiteServiceRequest) => {
     setSelectedRequest(req);
+
+    // Pre-fill with surveyed GPS and survey findings if available, otherwise suggested/fallback
+    const effectiveLat = req.surveyLatitude !== undefined && req.surveyLatitude !== null
+      ? Number(req.surveyLatitude)
+      : req.suggestedLatitude !== undefined && req.suggestedLatitude !== null
+      ? Number(req.suggestedLatitude)
+      : 51.5074;
+    const effectiveLng = req.surveyLongitude !== undefined && req.surveyLongitude !== null
+      ? Number(req.surveyLongitude)
+      : req.suggestedLongitude !== undefined && req.suggestedLongitude !== null
+      ? Number(req.suggestedLongitude)
+      : -0.1278;
+    const effectiveRadius = req.surveyGeofenceRadiusMeters || 100;
+    const effectiveInstructions = req.surveyNotes || req.specialInstructions || '';
+    const effectiveContact = req.surveyContactName 
+      ? `${req.surveyContactName} (${req.surveyContactPhone || ''})`.trim()
+      : req.emergencyContactName ? `${req.emergencyContactName} (${req.emergencyContactPhone || ''})`.trim() : '';
+
     setProvisionForm({
-      siteInstructions: req.specialInstructions || '',
-      emergencyContact: req.emergencyContactName ? `${req.emergencyContactName} (${req.emergencyContactPhone || ''})`.trim() : '',
+      latitude: effectiveLat,
+      longitude: effectiveLng,
+      geofenceRadiusMeters: effectiveRadius,
+      siteInstructions: effectiveInstructions,
+      emergencyContact: effectiveContact,
       adminFeedbackNotes: 'Deployment request approved. Site provisioned for security operations scheduling.',
     });
     setAssessmentNotes(req.adminFeedbackNotes || '');
     setIsDeployModalOpen(true);
+  };
+
+  const handleOpenSurveyModal = (req: AdminSiteServiceRequest) => {
+    setSelectedRequest(req);
+    const now = new Date();
+    setSurveyForm({
+      surveyLatitude: req.surveyLatitude !== undefined && req.surveyLatitude !== null
+        ? String(req.surveyLatitude)
+        : req.suggestedLatitude !== undefined && req.suggestedLatitude !== null
+        ? String(req.suggestedLatitude)
+        : '',
+      surveyLongitude: req.surveyLongitude !== undefined && req.surveyLongitude !== null
+        ? String(req.surveyLongitude)
+        : req.suggestedLongitude !== undefined && req.suggestedLongitude !== null
+        ? String(req.suggestedLongitude)
+        : '',
+      surveyGeofenceRadiusMeters: req.surveyGeofenceRadiusMeters || 100,
+      surveyContactName: req.surveyContactName || req.emergencyContactName || '',
+      surveyContactPhone: req.surveyContactPhone || req.emergencyContactPhone || '',
+      surveyNotes: req.surveyNotes || '',
+      surveyConductedAt: req.surveyConductedAt
+        ? new Date(req.surveyConductedAt).toISOString().slice(0, 16)
+        : now.toISOString().slice(0, 16),
+    });
+    setIsSurveyModalOpen(true);
+  };
+
+  const handleGetBrowserLocation = () => {
+    if (!navigator.geolocation) {
+      addToast('Geolocation is not supported by your browser', 'error');
+      return;
+    }
+    setLocatingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocatingGps(false);
+        const lat = Number(pos.coords.latitude.toFixed(6));
+        const lng = Number(pos.coords.longitude.toFixed(6));
+        setSurveyForm((prev) => ({
+          ...prev,
+          surveyLatitude: lat,
+          surveyLongitude: lng,
+        }));
+        addToast(`GPS captured: ${lat}, ${lng} (accuracy: ±${Math.round(pos.coords.accuracy)}m)`, 'success');
+      },
+      (err) => {
+        setLocatingGps(false);
+        addToast(`Could not acquire device GPS: ${err.message}`, 'error');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  const handleSurveySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRequest) return;
+
+    setActionLoading(true);
+    try {
+      await adminService.recordSiteSurveyNotes(selectedRequest.id, {
+        surveyLatitude: surveyForm.surveyLatitude ? Number(surveyForm.surveyLatitude) : null,
+        surveyLongitude: surveyForm.surveyLongitude ? Number(surveyForm.surveyLongitude) : null,
+        surveyGeofenceRadiusMeters: surveyForm.surveyGeofenceRadiusMeters ? Number(surveyForm.surveyGeofenceRadiusMeters) : 100,
+        surveyContactName: surveyForm.surveyContactName?.trim() || null,
+        surveyContactPhone: surveyForm.surveyContactPhone?.trim() || null,
+        surveyNotes: surveyForm.surveyNotes?.trim() || null,
+        surveyConductedAt: surveyForm.surveyConductedAt ? new Date(surveyForm.surveyConductedAt).toISOString() : new Date().toISOString(),
+      });
+
+      addToast('On-site survey findings and coordinates recorded successfully!', 'success');
+      setIsSurveyModalOpen(false);
+      await loadRequests();
+    } catch (err: any) {
+      addToast(err.message || 'Failed to record site survey findings', 'error');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleApproveAndDeploy = async (e: React.FormEvent) => {
@@ -246,6 +379,91 @@ export const SiteRequestsManagement: React.FC = () => {
       await loadRequests();
     } catch (err: any) {
       addToast(err.message || 'Failed to reject request', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRevertRequest = async () => {
+    if (!selectedRequest) return;
+
+    setActionLoading(true);
+    try {
+      await adminService.revertSiteServiceRequest(selectedRequest.id, assessmentNotes);
+      addToast('Request moved to Pending Review status', 'success');
+      setIsDeployModalOpen(false);
+      await loadRequests();
+    } catch (err: any) {
+      addToast(err.message || 'Failed to revert request to pending', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const loadAssignees = async () => {
+    try {
+      const res = await adminService.getVisitAssignees();
+      setAssignees(res.assignees || []);
+      if (res.assignees && res.assignees.length > 0) {
+        setVisitForm((prev) => {
+          if (prev.visitAssigneeId) return prev;
+          const matchCurrent = res.assignees.find((a) => a.id === currentUser?.id);
+          return {
+            ...prev,
+            visitAssigneeId: matchCurrent ? matchCurrent.id : res.assignees[0].id,
+          };
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load visit assignees', err);
+    }
+  };
+
+  const handleOpenVisitModal = (req: AdminSiteServiceRequest) => {
+    setSelectedRequest(req);
+
+    // Default visit schedule: tomorrow at 10:00 AM
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    const defaultDateStr = tomorrow.toISOString().slice(0, 16);
+
+    setVisitForm({
+      visitAssigneeId: req.visitAssigneeId || currentUser?.id || '',
+      visitScheduledAt: req.visitScheduledAt ? new Date(req.visitScheduledAt).toISOString().slice(0, 16) : defaultDateStr,
+      adminFeedbackNotes: req.adminFeedbackNotes || '',
+    });
+
+    setIsVisitModalOpen(true);
+    loadAssignees();
+  };
+
+  const handleScheduleVisitSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRequest) return;
+    if (!visitForm.visitAssigneeId) {
+      addToast('Please select an officer or administrator to assign', 'error');
+      return;
+    }
+    if (!visitForm.visitScheduledAt) {
+      addToast('Please select a visit date and time', 'error');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await adminService.scheduleSiteVisit(selectedRequest.id, {
+        visitAssigneeId: visitForm.visitAssigneeId,
+        visitScheduledAt: new Date(visitForm.visitScheduledAt).toISOString(),
+        adminFeedbackNotes: visitForm.adminFeedbackNotes || null,
+      });
+
+      addToast('Physical site visit scheduled and request moved to Under Assessment', 'success');
+      setIsVisitModalOpen(false);
+      setIsDeployModalOpen(false);
+      await loadRequests();
+    } catch (err: any) {
+      addToast(err.message || 'Failed to schedule site visit', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -894,7 +1112,18 @@ export const SiteRequestsManagement: React.FC = () => {
 
                     {/* Status Badge */}
                     <td className="py-3.5 px-4">
-                      {getStatusBadge(req.status)}
+                      <div className="flex flex-col gap-1 items-start">
+                        {getStatusBadge(req.status)}
+                        {req.visitScheduledAt && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-indigo-800 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-md">
+                            <Calendar className="w-2.5 h-2.5" />
+                            <span>
+                              Visit: {new Date(req.visitScheduledAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                              {req.visitAssignee ? ` (${req.visitAssignee.firstName} ${req.visitAssignee.lastName?.charAt(0)}.)` : ''}
+                            </span>
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Action */}
@@ -992,25 +1221,25 @@ export const SiteRequestsManagement: React.FC = () => {
 
       </div>
 
-      {/* 5. REDESIGNED ADMIN DEPLOYMENT REVIEW & APPROVAL MODAL (max-w-5xl, Fully Responsive) */}
+      {/* 5. REDESIGNED ADMIN DEPLOYMENT REVIEW & SURVEY ASSESSMENT MODAL (Fully Responsive) */}
       {isDeployModalOpen && selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border border-black rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-5xl w-full max-h-[96vh] sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-black/10 flex items-center justify-between bg-zinc-50 shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-[#032031] text-white">
-                  <ShieldCheck className="w-5 h-5" />
+            {/* Modal Header: Premium Fortress ASR Deep Navy Theme */}
+            <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-black/10 flex items-center justify-between bg-[#032031] text-white shrink-0">
+              <div className="flex items-center gap-3 truncate">
+                <div className="p-2 sm:p-2.5 rounded-xl bg-white/10 border border-white/15 text-emerald-400 shrink-0">
+                  <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-black/50">
-                      Site Deployment Review & Approval
+                <div className="flex flex-col truncate">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-slate-300">
+                      Deployment Review & Physical Assessment
                     </span>
                     {getUrgencyBadge(selectedRequest.urgency)}
                   </div>
-                  <h2 className="text-base sm:text-lg font-black text-[#032031]">
+                  <h2 className="text-sm sm:text-base md:text-lg font-black text-white truncate">
                     {selectedRequest.propertyName}
                   </h2>
                 </div>
@@ -1018,21 +1247,22 @@ export const SiteRequestsManagement: React.FC = () => {
 
               <button
                 onClick={() => setIsDeployModalOpen(false)}
-                className="w-9 h-9 rounded-xl border border-black/15 text-black/60 hover:text-black hover:bg-black/5 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-white/20 text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-2"
+                title="Close modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            {/* Modal Body: 2-Column Responsive Layout */}
-            <div className="flex-grow overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs text-neutral-800">
+            {/* Modal Body: Responsive 2-Column Grid */}
+            <div className="flex-grow overflow-y-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs text-slate-800 bg-white">
               
-              {/* Left Column: Client Requirements & Site Brief (6 cols on lg) */}
-              <div className="lg:col-span-6 flex flex-col gap-4">
+              {/* Left Column: Client Requirements & Survey Brief (6 cols on lg) */}
+              <div className="lg:col-span-6 flex flex-col gap-3.5">
                 
                 {/* Client Profile Capsule */}
-                <div className="p-4 rounded-xl border border-black/15 bg-black/[0.02] flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-black/5 border border-black/20 flex items-center justify-center text-sm font-black overflow-hidden relative shrink-0">
+                <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center gap-3 shadow-2xs">
+                  <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-sm font-black overflow-hidden relative shrink-0 text-[#032031] shadow-2xs">
                     {selectedRequest.client?.logoUrl ? (
                       <img src={getFullImageUrl(selectedRequest.client.logoUrl)} alt="Client" className="w-full h-full object-cover" />
                     ) : (
@@ -1040,65 +1270,152 @@ export const SiteRequestsManagement: React.FC = () => {
                     )}
                   </div>
                   <div className="flex flex-col truncate">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-black/40">Requesting Organization</span>
-                    <h3 className="font-black text-[#032031] text-sm truncate">{selectedRequest.client?.companyName}</h3>
-                    <span className="text-[11px] text-black/60 truncate font-semibold">{selectedRequest.client?.user?.email}</span>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">Requesting Organization</span>
+                    <h3 className="font-black text-[#032031] text-xs sm:text-sm truncate">{selectedRequest.client?.companyName}</h3>
+                    <span className="text-[11px] text-slate-600 truncate font-semibold">{selectedRequest.client?.user?.email}</span>
                   </div>
                 </div>
 
-                {/* Location Details */}
-                <div className="p-4 rounded-xl border border-black/15 flex flex-col gap-2 bg-white shadow-2xs">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-black/50 border-b border-black/10 pb-1 flex items-center gap-1.5">
+                {/* Physical Visit Assessment Card (if scheduled) */}
+                {selectedRequest.visitScheduledAt && (
+                  <div className="p-3.5 sm:p-4 rounded-xl border border-indigo-200 bg-indigo-50/60 flex flex-col gap-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-indigo-200/70 pb-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-indigo-700" />
+                        Physical Site Visit Scheduled
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                        selectedRequest.visitStatus === 'COMPLETED'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}>
+                        {selectedRequest.visitStatus || 'PENDING'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] uppercase text-indigo-800/70 font-bold">Assigned Officer</span>
+                        <span className="text-indigo-950 font-black">
+                          {selectedRequest.visitAssignee ? `${selectedRequest.visitAssignee.firstName} ${selectedRequest.visitAssignee.lastName}` : 'Unassigned'}
+                        </span>
+                        <span className="text-[10px] text-indigo-800/80 truncate">{selectedRequest.visitAssignee?.email}</span>
+                      </div>
+                      <div className="flex flex-col sm:text-right">
+                        <span className="text-[9px] uppercase text-indigo-800/70 font-bold">Visit Schedule</span>
+                        <span className="text-indigo-950 font-black">
+                          {new Date(selectedRequest.visitScheduledAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                        <span className="text-[10px] text-indigo-800/80">
+                          {new Date(selectedRequest.visitScheduledAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* On-Site Physical Survey Report & Verified GPS Card */}
+                {(selectedRequest.surveyNotes || selectedRequest.surveyLatitude || selectedRequest.surveyConductedAt) && (
+                  <div className="p-3.5 sm:p-4 rounded-xl border border-emerald-300 bg-emerald-50/70 flex flex-col gap-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-emerald-200 pb-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-950 flex items-center gap-1.5">
+                        <ClipboardCheck className="w-3.5 h-3.5 text-emerald-700" />
+                        On-Site Survey Findings & GPS Verified
+                      </span>
+                      {selectedRequest.surveyConductedAt && (
+                        <span className="text-[9px] font-bold text-emerald-800">
+                          Surveyed: {new Date(selectedRequest.surveyConductedAt).toLocaleDateString('en-GB')}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-[11px]">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-emerald-800/80 uppercase">Verified GPS</span>
+                        <span className="font-black text-emerald-950 font-mono text-xs">
+                          {selectedRequest.surveyLatitude ? `${Number(selectedRequest.surveyLatitude).toFixed(6)}, ${Number(selectedRequest.surveyLongitude).toFixed(6)}` : 'Standard Coordinates'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[9px] font-bold text-emerald-800/80 uppercase">Geofence Radius</span>
+                        <span className="font-black text-emerald-950 text-xs">
+                          {selectedRequest.surveyGeofenceRadiusMeters || 100} meters
+                        </span>
+                      </div>
+                    </div>
+
+                    {selectedRequest.surveyContactName && (
+                      <div className="flex flex-col text-[11px] border-t border-emerald-200/60 pt-1.5">
+                        <span className="text-[9px] font-bold text-emerald-800/80 uppercase">Site Contact Met On-Site</span>
+                        <span className="font-bold text-emerald-950">
+                          {selectedRequest.surveyContactName} {selectedRequest.surveyContactPhone ? `(${selectedRequest.surveyContactPhone})` : ''}
+                        </span>
+                      </div>
+                    )}
+
+                    {selectedRequest.surveyNotes && (
+                      <div className="flex flex-col text-[11px] border-t border-emerald-200/60 pt-1.5">
+                        <span className="text-[9px] font-bold text-emerald-800/80 uppercase">Survey Notes & Assessment</span>
+                        <p className="text-[11px] font-medium text-emerald-900 leading-relaxed bg-white/80 p-2.5 rounded-lg border border-emerald-200/60 whitespace-pre-line">
+                          {selectedRequest.surveyNotes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Location Details Card */}
+                <div className="p-3.5 sm:p-4 rounded-xl border border-slate-200 bg-white shadow-2xs flex flex-col gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-[#032031]" />
                     Deployment Location
                   </span>
-                  <div className="flex flex-col gap-1 font-semibold text-black">
-                    <span className="font-black text-sm text-[#032031]">{selectedRequest.propertyName}</span>
-                    <span className="text-black/80">{selectedRequest.propertyAddress}</span>
+                  <div className="flex flex-col gap-0.5 font-semibold text-slate-900">
+                    <span className="font-black text-xs sm:text-sm text-[#032031]">{selectedRequest.propertyName}</span>
+                    <span className="text-slate-700 leading-snug">{selectedRequest.propertyAddress}</span>
                     {(selectedRequest.city || selectedRequest.postcode) && (
-                      <span className="text-black/50 text-[11px]">{selectedRequest.city} {selectedRequest.postcode}</span>
+                      <span className="text-slate-500 text-[11px] font-bold">{selectedRequest.city} {selectedRequest.postcode}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Manning & Schedule */}
-                <div className="p-4 rounded-xl border border-black/15 flex flex-col gap-3 bg-white shadow-2xs">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-black/50 border-b border-black/10 pb-1 flex items-center gap-1.5">
+                {/* Manning & Schedule Card */}
+                <div className="p-3.5 sm:p-4 rounded-xl border border-slate-200 bg-white shadow-2xs flex flex-col gap-3">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
                     <Users className="w-3.5 h-3.5 text-[#032031]" />
                     Guarding Schedule & Requirements
                   </span>
                   
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col">
-                      <span className="text-[9px] text-black/50 font-bold uppercase">Officers Needed</span>
-                      <span className="font-black text-[#032031] text-sm">{selectedRequest.requiredGuardsCount} SIA Officers</span>
+                      <span className="text-[9px] text-slate-500 font-bold uppercase">Officers Needed</span>
+                      <span className="font-black text-[#032031] text-xs sm:text-sm">{selectedRequest.requiredGuardsCount} SIA Officers</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[9px] text-black/50 font-bold uppercase">Target Start Date</span>
-                      <span className="font-black text-[#032031] text-sm">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase">Target Start Date</span>
+                      <span className="font-black text-[#032031] text-xs sm:text-sm">
                         {new Date(selectedRequest.serviceStartDate).toLocaleDateString('en-GB')}
                       </span>
                     </div>
                   </div>
 
                   {selectedRequest.shiftScheduleNotes && (
-                    <div className="flex flex-col pt-1 border-t border-black/10">
-                      <span className="text-[9px] text-black/50 font-bold uppercase">Operating Schedule</span>
-                      <p className="font-bold text-xs text-[#032031]">{selectedRequest.shiftScheduleNotes}</p>
+                    <div className="flex flex-col pt-1.5 border-t border-slate-100">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase">Operating Schedule</span>
+                      <p className="font-bold text-xs text-[#032031] leading-relaxed">{selectedRequest.shiftScheduleNotes}</p>
                     </div>
                   )}
 
                   {selectedRequest.serviceEndDate && (
-                    <div className="flex flex-col pt-1 border-t border-black/10">
-                      <span className="text-[9px] text-black/50 font-bold uppercase">Contract End Date</span>
-                      <p className="font-semibold text-black/80">{new Date(selectedRequest.serviceEndDate).toLocaleDateString('en-GB')}</p>
+                    <div className="flex flex-col pt-1.5 border-t border-slate-100">
+                      <span className="text-[9px] text-slate-500 font-bold uppercase">Contract End Date</span>
+                      <p className="font-semibold text-slate-700">{new Date(selectedRequest.serviceEndDate).toLocaleDateString('en-GB')}</p>
                     </div>
                   )}
                 </div>
 
-                {/* Site Hazards / Special Instructions */}
+                {/* Site Hazards / Special Instructions (if present) */}
                 {selectedRequest.specialInstructions && (
-                  <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/60 flex flex-col gap-1 text-amber-950">
+                  <div className="p-3.5 sm:p-4 rounded-xl border border-amber-300 bg-amber-50/70 flex flex-col gap-1 text-amber-950 shadow-2xs">
                     <span className="text-[9px] font-black uppercase tracking-wider text-amber-800 flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5" /> Site Instructions & Known Hazards
                     </span>
@@ -1110,11 +1427,11 @@ export const SiteRequestsManagement: React.FC = () => {
 
                 {/* Emergency Contact */}
                 {(selectedRequest.emergencyContactName || selectedRequest.emergencyContactPhone) && (
-                  <div className="p-3.5 rounded-xl border border-black/15 flex items-center gap-2.5 bg-black/[0.02]">
-                    <Phone className="w-4 h-4 text-black/50 shrink-0" />
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-bold text-black/40 uppercase">Client Emergency Contact</span>
-                      <span className="font-bold text-black">
+                  <div className="p-3 rounded-xl border border-slate-200 flex items-center gap-2.5 bg-slate-50/80 shadow-2xs">
+                    <Phone className="w-4 h-4 text-[#032031] shrink-0" />
+                    <div className="flex flex-col truncate">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Client Emergency Contact</span>
+                      <span className="font-bold text-slate-900 truncate">
                         {selectedRequest.emergencyContactName} {selectedRequest.emergencyContactPhone && `(${selectedRequest.emergencyContactPhone})`}
                       </span>
                     </div>
@@ -1124,13 +1441,13 @@ export const SiteRequestsManagement: React.FC = () => {
               </div>
 
               {/* Right Column: Operations Standing Orders & Deployment Configuration (6 cols on lg) */}
-              <div className="lg:col-span-6 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-black/15 lg:pl-6 pt-5 lg:pt-0">
+              <div className="lg:col-span-6 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-slate-200 lg:pl-6 pt-5 lg:pt-0">
                 
                 <form id="provision-form" onSubmit={handleApproveAndDeploy} className="flex flex-col gap-4">
                   
                   {/* Deployment Standing Orders Card */}
-                  <div className="border border-black/15 rounded-xl p-5 bg-white flex flex-col gap-4 shadow-2xs">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#032031] border-b border-black/10 pb-2 flex items-center gap-1.5">
+                  <div className="border border-slate-200 rounded-xl p-4 sm:p-5 bg-white flex flex-col gap-3.5 shadow-2xs">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#032031] border-b border-slate-100 pb-2 flex items-center gap-1.5">
                       <FileText className="w-4 h-4 text-[#032031]" />
                       Operations Deployment Orders
                     </span>
@@ -1142,9 +1459,9 @@ export const SiteRequestsManagement: React.FC = () => {
                         value={provisionForm.emergencyContact || ''}
                         onChange={(e) => setProvisionForm({ ...provisionForm, emergencyContact: e.target.value })}
                         placeholder="e.g. Operations Control Room - 020 7946 0192"
-                        className="h-10 px-3.5 border border-black/25 rounded-xl font-medium text-xs bg-white focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031]"
+                        className="h-10 px-3.5 border border-slate-300 rounded-xl font-medium text-xs bg-white focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031] transition"
                       />
-                      <span className="text-[10px] text-black/50">
+                      <span className="text-[10px] text-slate-500">
                         Primary 24/7 hotline given to assigned guards on site.
                       </span>
                     </div>
@@ -1156,7 +1473,7 @@ export const SiteRequestsManagement: React.FC = () => {
                         value={provisionForm.siteInstructions || ''}
                         onChange={(e) => setProvisionForm({ ...provisionForm, siteInstructions: e.target.value })}
                         placeholder="Key safe access codes, perimeter patrol intervals, alarm protocols, gate opening hours..."
-                        className="p-3 border border-black/25 rounded-xl font-medium text-xs bg-white resize-none focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031]"
+                        className="p-3 border border-slate-300 rounded-xl font-medium text-xs bg-white resize-none focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031] transition"
                       />
                     </div>
 
@@ -1167,17 +1484,17 @@ export const SiteRequestsManagement: React.FC = () => {
                         value={provisionForm.adminFeedbackNotes || ''}
                         onChange={(e) => setProvisionForm({ ...provisionForm, adminFeedbackNotes: e.target.value })}
                         placeholder="Notes notifying client that security deployment is confirmed and officers are being rostered..."
-                        className="p-3 border border-black/25 rounded-xl font-medium text-xs bg-white resize-none focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031]"
+                        className="p-3 border border-slate-300 rounded-xl font-medium text-xs bg-white resize-none focus:outline-none focus:border-[#032031] focus:ring-1 focus:ring-[#032031] transition"
                       />
                     </div>
                   </div>
 
                   {/* Provisioning Info Notice */}
-                  <div className="p-4 bg-[#032031]/5 border border-[#032031]/15 rounded-xl flex items-start gap-3 text-black/80">
+                  <div className="p-4 bg-[#032031]/5 border border-[#032031]/15 rounded-xl flex items-start gap-3 text-slate-800">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-0.5 text-xs">
                       <span className="font-black text-[#032031]">Automatic Site Geofencing</span>
-                      <p className="text-[11px] leading-relaxed text-black/70 font-medium">
+                      <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
                         Approving this request creates the official physical property in the database with standard 100m geofence validation. Specific coordinate adjustments can be modified anytime in <strong>Site Management</strong>.
                       </p>
                     </div>
@@ -1189,39 +1506,78 @@ export const SiteRequestsManagement: React.FC = () => {
 
             </div>
 
-            {/* Modal Actions Footer */}
-            <div className="p-4 sm:p-5 border-t border-black/10 flex flex-wrap items-center justify-between gap-3 bg-zinc-50 shrink-0">
+            {/* Modal Actions Footer: Fully Responsive & Accurately Aligned */}
+            <div className="p-3.5 sm:p-5 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
               
-              {/* Left action buttons: Decline / Under Assessment */}
-              <div className="flex items-center gap-2">
-                {canApprove && selectedRequest.status !== 'REJECTED' && selectedRequest.status !== 'APPROVED' && (
+              {/* Left Action Cluster: Operational Lifecycle (Wrap / Grid on Mobile, Flex on Desktop) */}
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+                {canAssess && selectedRequest.status !== 'PENDING_REVIEW' && (
                   <button
                     type="button"
-                    onClick={() => setIsRejectModalOpen(true)}
+                    onClick={handleRevertRequest}
                     disabled={actionLoading}
-                    className="px-3.5 py-2 text-red-600 border border-red-300 hover:bg-red-50 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50 shadow-2xs"
                   >
-                    Decline Request
+                    <RotateCcw className="w-3 h-3 text-slate-600" />
+                    <span>Revert</span>
                   </button>
                 )}
-                {canAssess && selectedRequest.status === 'PENDING_REVIEW' && (
+
+                {canAssess && selectedRequest.status !== 'UNDER_ASSESSMENT' && (
                   <button
                     type="button"
                     onClick={handleAssessRequest}
                     disabled={actionLoading}
-                    className="px-3.5 py-2 text-blue-700 border border-blue-300 hover:bg-blue-50 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-blue-800 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50 shadow-2xs"
                   >
-                    Mark Under Assessment
+                    <Shield className="w-3 h-3 text-blue-700" />
+                    <span>Assessment</span>
+                  </button>
+                )}
+
+                {canAssess && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenVisitModal(selectedRequest)}
+                    disabled={actionLoading}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-indigo-800 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50 shadow-2xs"
+                  >
+                    <Calendar className="w-3 h-3 text-indigo-700" />
+                    <span>{selectedRequest.visitScheduledAt ? 'Reschedule' : 'Site Visit'}</span>
+                  </button>
+                )}
+
+                {canAssess && (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenSurveyModal(selectedRequest)}
+                    disabled={actionLoading}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-emerald-800 bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50 shadow-2xs"
+                  >
+                    <ClipboardCheck className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>{selectedRequest.surveyNotes || selectedRequest.surveyConductedAt ? 'Update Survey' : 'Log Survey'}</span>
+                  </button>
+                )}
+
+                {canApprove && selectedRequest.status !== 'REJECTED' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRejectModalOpen(true)}
+                    disabled={actionLoading}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 rounded-xl text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50 shadow-2xs"
+                  >
+                    <XCircle className="w-3 h-3 text-rose-600" />
+                    <span>Decline</span>
                   </button>
                 )}
               </div>
 
-              {/* Right action buttons: Close / Approve & Deploy */}
-              <div className="flex items-center gap-2">
+              {/* Right Action Cluster: Submission & Cancellation (Full width on mobile, right aligned on desktop) */}
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsDeployModalOpen(false)}
-                  className="px-4 py-2 border border-black/20 hover:bg-black/5 text-black font-bold rounded-xl text-xs transition cursor-pointer"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer text-center"
                 >
                   Cancel
                 </button>
@@ -1231,7 +1587,7 @@ export const SiteRequestsManagement: React.FC = () => {
                     type="submit"
                     form="provision-form"
                     disabled={actionLoading}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer shadow-sm text-xs"
+                    className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-2.5 bg-[#032031] hover:bg-black text-white font-black uppercase tracking-wider rounded-xl transition disabled:opacity-50 cursor-pointer shadow-sm text-xs"
                   >
                     {actionLoading ? (
                       <>
@@ -1240,14 +1596,14 @@ export const SiteRequestsManagement: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <Check className="w-4 h-4" />
-                        <span>Confirm & Deploy Site</span>
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span className="truncate">{selectedRequest.status === 'APPROVED' ? 'Update & Confirm' : 'Confirm & Deploy'}</span>
                       </>
                     )}
                   </button>
                 ) : (
-                  <span className="px-4 py-2 bg-black/5 text-black/60 rounded-xl text-xs font-black uppercase tracking-wider border border-black/10 select-none">
-                    Read-Only Audit Mode
+                  <span className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-black uppercase tracking-wider border border-slate-200 select-none">
+                    Read-Only
                   </span>
                 )}
               </div>
@@ -1294,6 +1650,298 @@ export const SiteRequestsManagement: React.FC = () => {
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black uppercase tracking-wider transition disabled:opacity-50"
                 >
                   Confirm Decline
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Physical Site Visit Scheduling Modal */}
+      {isVisitModalOpen && selectedRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border border-black rounded-2xl max-w-lg w-full shadow-2xl flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-black/10 flex items-center justify-between bg-zinc-50">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-indigo-700" />
+                <h3 className="text-sm font-black text-[#032031] uppercase tracking-wider">
+                  Schedule Physical Site Visit
+                </h3>
+              </div>
+              <button onClick={() => setIsVisitModalOpen(false)} className="p-1 rounded hover:bg-black/5 text-black">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleScheduleVisitSubmit} className="p-6 flex flex-col gap-4 text-xs">
+              {/* Site Details Overview */}
+              <div className="p-3 bg-zinc-50 border border-black/10 rounded-xl flex flex-col gap-1">
+                <span className="text-[9px] font-black uppercase text-black/50">Target Property</span>
+                <span className="font-bold text-[#032031] text-xs">{selectedRequest.propertyName}</span>
+                <span className="text-black/70 text-[11px]">{selectedRequest.propertyAddress}</span>
+              </div>
+
+              {/* Assignee Selection */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                  Assign Officer / Administrator <span className="text-red-600">*</span>
+                </label>
+                <select
+                  required
+                  value={visitForm.visitAssigneeId}
+                  onChange={(e) => setVisitForm({ ...visitForm, visitAssigneeId: e.target.value })}
+                  className="p-2.5 border border-black/30 rounded-xl font-medium focus:outline-none focus:border-[#032031] bg-white"
+                >
+                  <option value="" disabled>Select officer to conduct visit...</option>
+                  {assignees.map((assignee) => (
+                    <option key={assignee.id} value={assignee.id}>
+                      {assignee.firstName} {assignee.lastName} ({assignee.jobTitle}) - {assignee.email}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[10px] text-black/50 font-medium">
+                  The designated staff member will physically survey the property to confirm exact geofencing coordinates.
+                </span>
+              </div>
+
+              {/* Visit Scheduled Date & Time */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                  Site Visit Date & Time <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  required
+                  value={visitForm.visitScheduledAt}
+                  onChange={(e) => setVisitForm({ ...visitForm, visitScheduledAt: e.target.value })}
+                  className="p-2.5 border border-black/30 rounded-xl font-medium focus:outline-none focus:border-[#032031] bg-white"
+                />
+              </div>
+
+              {/* Assessment Instructions / Notes */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                  Visit Survey Instructions (Optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={visitForm.adminFeedbackNotes}
+                  onChange={(e) => setVisitForm({ ...visitForm, adminFeedbackNotes: e.target.value })}
+                  placeholder="e.g., Verify gate access code, inspect emergency exit routes, confirm latitude/longitude perimeter coordinates..."
+                  className="p-2.5 border border-black/30 rounded-xl font-medium focus:outline-none focus:border-[#032031] bg-white resize-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-black/10">
+                <button
+                  type="button"
+                  onClick={() => setIsVisitModalOpen(false)}
+                  className="px-3.5 py-2 border border-black/20 rounded-xl font-bold hover:bg-black/5 text-black"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl font-black uppercase tracking-wider transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{actionLoading ? 'Scheduling...' : 'Save & Schedule Visit'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Physical Site Survey Report Modal (Interim Survey Notes) */}
+      {isSurveyModalOpen && selectedRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border border-black rounded-2xl max-w-xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-black/10 flex items-center justify-between bg-zinc-50 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-700 text-white rounded-xl">
+                  <ClipboardCheck className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-black/50">
+                    On-Site Assessment
+                  </span>
+                  <h3 className="text-sm sm:text-base font-black text-[#032031]">
+                    Record Site Survey Findings & GPS
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setIsSurveyModalOpen(false)}
+                className="w-8 h-8 rounded-lg border border-black/15 text-black/60 hover:text-black hover:bg-black/5 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSurveySubmit} className="flex-grow overflow-y-auto p-6 flex flex-col gap-4 text-xs">
+              
+              {/* Site Details Overview */}
+              <div className="p-3.5 bg-zinc-50 border border-black/10 rounded-xl flex flex-col gap-1">
+                <span className="text-[9px] font-black uppercase text-black/50">Surveyed Property</span>
+                <span className="font-bold text-[#032031] text-xs">{selectedRequest.propertyName}</span>
+                <span className="text-black/70 text-[11px]">{selectedRequest.propertyAddress}</span>
+              </div>
+
+              {/* GPS Coordinates Section with live Browser GPS button */}
+              <div className="p-4 rounded-xl border border-black/15 bg-white flex flex-col gap-3">
+                <div className="flex items-center justify-between border-b border-black/10 pb-2">
+                  <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-emerald-700" />
+                    Actual On-Site GPS Location
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleGetBrowserLocation}
+                    disabled={locatingGps}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg hover:bg-emerald-100 text-[10px] font-black uppercase tracking-wider transition cursor-pointer disabled:opacity-50"
+                    title="Acquire live GPS coordinates from this device"
+                  >
+                    <Locate className={`w-3 h-3 ${locatingGps ? 'animate-spin' : ''}`} />
+                    <span>{locatingGps ? 'Locating...' : 'Use Device GPS'}</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                      Latitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g., 51.5074"
+                      value={surveyForm.surveyLatitude}
+                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyLatitude: e.target.value })}
+                      className="p-2.5 border border-black/30 rounded-xl font-mono text-xs focus:outline-none focus:border-[#032031] bg-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                      Longitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g., -0.1278"
+                      value={surveyForm.surveyLongitude}
+                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyLongitude: e.target.value })}
+                      className="p-2.5 border border-black/30 rounded-xl font-mono text-xs focus:outline-none focus:border-[#032031] bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                    Calibrated Geofence Radius: <span className="text-emerald-700 font-bold">{surveyForm.surveyGeofenceRadiusMeters} meters</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={25}
+                    max={1000}
+                    step={25}
+                    value={surveyForm.surveyGeofenceRadiusMeters}
+                    onChange={(e) => setSurveyForm({ ...surveyForm, surveyGeofenceRadiusMeters: parseInt(e.target.value, 10) })}
+                    className="w-full accent-[#032031] cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[9px] text-black/40 font-bold">
+                    <span>25m (Compact)</span>
+                    <span>100m (Standard)</span>
+                    <span>500m (Perimeter)</span>
+                    <span>1,000m (Industrial)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* On-Site Contact Person Met */}
+              <div className="p-4 rounded-xl border border-black/15 bg-white flex flex-col gap-3">
+                <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5 border-b border-black/10 pb-2">
+                  <Users className="w-3.5 h-3.5 text-blue-700" />
+                  Client Representative Met On-Site
+                </span>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                      Contact Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., David Miller (Site Manager)"
+                      value={surveyForm.surveyContactName}
+                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyContactName: e.target.value })}
+                      className="p-2.5 border border-black/30 rounded-xl text-xs focus:outline-none focus:border-[#032031] bg-white"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                      Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g., +44 7911 123456"
+                      value={surveyForm.surveyContactPhone}
+                      onChange={(e) => setSurveyForm({ ...surveyForm, surveyContactPhone: e.target.value })}
+                      className="p-2.5 border border-black/30 rounded-xl text-xs focus:outline-none focus:border-[#032031] bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Physical Survey & Assessment Findings */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                  Physical Site Survey Findings & Access Instructions
+                </label>
+                <textarea
+                  rows={4}
+                  value={surveyForm.surveyNotes}
+                  onChange={(e) => setSurveyForm({ ...surveyForm, surveyNotes: e.target.value })}
+                  placeholder="Record on-site findings: gate access codes, hazard points, guard checkpoint locations, CCTV coverage notes, emergency shut-off locations..."
+                  className="p-3 border border-black/30 rounded-xl font-medium focus:outline-none focus:border-[#032031] bg-white resize-none"
+                />
+              </div>
+
+              {/* Survey Conducted Date & Time */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black uppercase tracking-wider text-black">
+                  Date & Time of Physical Inspection
+                </label>
+                <input
+                  type="datetime-local"
+                  value={surveyForm.surveyConductedAt}
+                  onChange={(e) => setSurveyForm({ ...surveyForm, surveyConductedAt: e.target.value })}
+                  className="p-2.5 border border-black/30 rounded-xl text-xs focus:outline-none focus:border-[#032031] bg-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-black/10">
+                <button
+                  type="button"
+                  onClick={() => setIsSurveyModalOpen(false)}
+                  className="px-4 py-2 border border-black/20 rounded-xl font-bold hover:bg-black/5 text-black"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-black uppercase tracking-wider transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-sm text-xs"
+                >
+                  <ClipboardCheck className="w-4 h-4" />
+                  <span>{actionLoading ? 'Saving Report...' : 'Save Survey Report'}</span>
                 </button>
               </div>
             </form>

@@ -27,6 +27,23 @@ export interface SiteServiceRequest {
   adminFeedbackNotes?: string | null;
   reviewedByUserId?: string | null;
   reviewedAt?: string | null;
+  visitAssigneeId?: string | null;
+  visitScheduledAt?: string | null;
+  visitStatus?: 'PENDING' | 'COMPLETED' | 'CANCELLED' | null;
+  visitAssignee?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  } | null;
+  surveyLatitude?: number | string | null;
+  surveyLongitude?: number | string | null;
+  surveyGeofenceRadiusMeters?: number | null;
+  surveyContactName?: string | null;
+  surveyContactPhone?: string | null;
+  surveyNotes?: string | null;
+  surveyConductedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   site?: {

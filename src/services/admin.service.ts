@@ -214,6 +214,28 @@ export const adminService = {
     });
   },
 
+  // Revert request back to PENDING_REVIEW
+  revertSiteServiceRequest: (id: string, adminFeedbackNotes?: string) => {
+    return api.put<{ message: string; request: AdminSiteServiceRequest }>(`/admin/requests/${id}/revert`, {
+      adminFeedbackNotes,
+    });
+  },
+
+  // Fetch assignable personnel for physical site visits
+  getVisitAssignees: () => {
+    return api.get<{ assignees: AdminVisitAssignee[] }>('/admin/requests/assignees');
+  },
+
+  // Schedule a physical site visit
+  scheduleSiteVisit: (id: string, payload: { visitAssigneeId: string; visitScheduledAt: string; adminFeedbackNotes?: string | null }) => {
+    return api.put<{ message: string; request: AdminSiteServiceRequest }>(`/admin/requests/${id}/schedule-visit`, payload);
+  },
+
+  // Record interim physical site survey findings and exact coordinates
+  recordSiteSurveyNotes: (id: string, payload: RecordSurveyNotesPayload) => {
+    return api.put<{ message: string; request: AdminSiteServiceRequest }>(`/admin/requests/${id}/survey-notes`, payload);
+  },
+
   // Fetch all physical sites
   getAllSites: (clientId?: string) => {
     const qs = clientId ? `?clientId=${clientId}` : '';
@@ -360,6 +382,27 @@ export interface AuditLogFilterParams {
 export type ServiceRequestType = 'NEW_SITE_DEPLOYMENT' | 'EXTRA_GUARD_COVERAGE' | 'SCHEDULE_CHANGE' | 'SPECIAL_EVENT';
 export type ServiceRequestStatus = 'PENDING_REVIEW' | 'UNDER_ASSESSMENT' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export type ServiceRequestUrgency = 'STANDARD' | 'PRIORITY' | 'EMERGENCY';
+export type VisitStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
+
+export interface AdminVisitAssignee {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  jobTitle: string;
+  department: string;
+}
+
+export interface RecordSurveyNotesPayload {
+  surveyLatitude?: number | null;
+  surveyLongitude?: number | null;
+  surveyGeofenceRadiusMeters?: number;
+  surveyContactName?: string | null;
+  surveyContactPhone?: string | null;
+  surveyNotes?: string | null;
+  surveyConductedAt?: string | null;
+}
 
 export interface AdminSiteServiceRequest {
   id: string;
@@ -384,6 +427,23 @@ export interface AdminSiteServiceRequest {
   adminFeedbackNotes?: string | null;
   reviewedByUserId?: string | null;
   reviewedAt?: string | null;
+  visitAssigneeId?: string | null;
+  visitScheduledAt?: string | null;
+  visitStatus?: VisitStatus | null;
+  visitAssignee?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  } | null;
+  surveyLatitude?: number | string | null;
+  surveyLongitude?: number | string | null;
+  surveyGeofenceRadiusMeters?: number | null;
+  surveyContactName?: string | null;
+  surveyContactPhone?: string | null;
+  surveyNotes?: string | null;
+  surveyConductedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   client?: ClientManagementProfile | null;
