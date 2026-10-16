@@ -14,8 +14,10 @@ class ApiError extends Error {
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   
-  // Disable application/json header for multipart form data uploads to let the browser set boundaries
-  if (!(options.body instanceof FormData)) {
+  // For multipart form data uploads, ensure Content-Type is unset so the browser sets the boundary automatically
+  if (options.body instanceof FormData) {
+    headers.delete('Content-Type');
+  } else if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 

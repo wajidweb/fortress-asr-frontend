@@ -11,6 +11,8 @@ import GuardManagement from './GuardManagement';
 import ClientManagement from './ClientManagement';
 import SiteRequestsManagement from './SiteRequestsManagement';
 import SiteManagement from './SiteManagement';
+import { RotaManagement } from './RotaManagement';
+import { AttendanceManagement } from './AttendanceManagement';
 import AuditLogsManagement from './AuditLogsManagement';
 import UsersRolesManagement from './UsersRolesManagement';
 import AdminSettings from './AdminSettings';
@@ -75,6 +77,10 @@ export default function AdminDashboard() {
       } else if (activeMenu === 'sites-dash' && !hasPermission(user, 'sites:read')) {
         setActiveMenu('admin-dash');
       } else if (activeMenu === 'admin-requests' && !hasPermission(user, 'requests:read')) {
+        setActiveMenu('admin-dash');
+      } else if (activeMenu === 'rota' && !hasPermission(user, 'shifts:read')) {
+        setActiveMenu('admin-dash');
+      } else if (activeMenu === 'attendance' && !hasPermission(user, 'shifts:read')) {
         setActiveMenu('admin-dash');
       } else if (activeMenu === 'users-roles' || activeMenu === 'audit-logs' || activeMenu === 'company-settings') {
         setActiveMenu('admin-dash');
@@ -141,6 +147,8 @@ export default function AdminDashboard() {
           {activeMenu === 'sites-dash' && hasPermission(user, 'sites:read') && (
             <SiteManagement onNavigateToRequests={() => setActiveMenu('admin-requests')} />
           )}
+          {activeMenu === 'rota' && hasPermission(user, 'shifts:read') && <RotaManagement />}
+          {activeMenu === 'attendance' && hasPermission(user, 'shifts:read') && <AttendanceManagement />}
           {activeMenu === 'audit-logs' && user.role === 'SUPER_ADMIN' && <AuditLogsManagement />}
           {activeMenu === 'users-roles' && user.role === 'SUPER_ADMIN' && <UsersRolesManagement />}
           {activeMenu === 'company-settings' && user.role === 'SUPER_ADMIN' && <AdminSettings />}

@@ -1,32 +1,22 @@
 'use client';
 
 import React from 'react';
+import { GuardShiftConsole } from './GuardShiftConsole';
+import { ShiftCheckIn as ShiftCheckInConsole } from './ShiftCheckIn';
 
 // 1. My Shifts Panel Component
 export const MyShifts: React.FC = () => {
-  return (
-    <div className="w-full h-full border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center p-12 text-slate-400 select-none text-[10px] font-black uppercase tracking-wider min-h-[300px]">
-      Officer Terminal Operations Workspace
-    </div>
-  );
+  return <GuardShiftConsole initialTab="today" />;
 };
 
 // 2. Shift Check In Panel Component
 export const ShiftCheckIn: React.FC = () => {
-  return (
-    <div className="w-full h-full border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center p-12 text-slate-400 select-none text-[10px] font-black uppercase tracking-wider min-h-[300px]">
-      Shift Check In Console
-    </div>
-  );
+  return <ShiftCheckInConsole />;
 };
 
 // 3. Schedules Rota Panel Component
 export const SchedulesRota: React.FC = () => {
-  return (
-    <div className="w-full h-full border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center p-12 text-slate-400 select-none text-[10px] font-black uppercase tracking-wider min-h-[300px]">
-      Schedules Rota Calendar
-    </div>
-  );
+  return <GuardShiftConsole initialTab="upcoming" />;
 };
 
 // 4. Patrol Terminal Panel Component

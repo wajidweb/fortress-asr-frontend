@@ -337,6 +337,64 @@ export const adminService = {
       message: string;
     }>('/admin/security/change-password', payload);
   },
+
+  // Shift & Rota Scheduling Operations
+  getShifts: (params?: {
+    siteId?: string;
+    guardId?: string;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  }) => {
+    const query = new URLSearchParams();
+    if (params?.siteId) query.append('siteId', params.siteId);
+    if (params?.guardId) query.append('guardId', params.guardId);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.status && params.status !== 'ALL') query.append('status', params.status);
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<{ shifts: AdminShift[] }>(`/admin/shifts${qs}`);
+  },
+
+  getShiftById: (id: string) => {
+    return api.get<{ shift: AdminShift }>(`/admin/shifts/${id}`);
+  },
+
+  createShift: (payload: CreateShiftPayload) => {
+    return api.post<{ message: string; shift: AdminShift; travelWarning?: string | null }>('/admin/shifts', payload);
+  },
+
+  updateShift: (id: string, payload: UpdateShiftPayload) => {
+    return api.put<{ message: string; shift: AdminShift }>(`/admin/shifts/${id}`, payload);
+  },
+
+  cancelShift: (id: string) => {
+    return api.put<{ message: string; shift: AdminShift }>(`/admin/shifts/${id}/cancel`, {});
+  },
+
+  getEligibleGuards: (params: { siteId: string; startTime: string; endTime: string; excludeShiftId?: string }) => {
+    const query = new URLSearchParams();
+    query.append('siteId', params.siteId);
+    query.append('startTime', params.startTime);
+    query.append('endTime', params.endTime);
+    if (params.excludeShiftId) query.append('excludeShiftId', params.excludeShiftId);
+
+    return api.get<{ guards: EligibleGuard[] }>(`/admin/shifts/eligible-guards?${query.toString()}`);
+  },
+
+  // Live Operations Attendance Monitor
+  getLiveAttendance: () => {
+    return api.get<{
+      shifts: AdminShift[];
+      stats: {
+        totalToday: number;
+        onSiteNow: number;
+        lateCheckIns: number;
+        completedToday: number;
+      };
+    }>('/admin/attendance/live');
+  },
 };
 
 
@@ -473,6 +531,7 @@ export interface AdminSite {
     companyName: string;
     logoUrl?: string | null;
     urlSlug?: string | null;
+    billingRateHour?: number | string | null;
   };
   activeOfficersCount: number;
   activeShifts: Array<{
@@ -563,4 +622,93 @@ export interface UpdateStaffPermissionsPayload {
   jobTitle?: string | null;
   department?: string | null;
 }
+
+export type ShiftStatus =
+  | 'SCHEDULED'
+  | 'PENDING_CONFIRMATION'
+  | 'CONFIRMED'
+  | 'CHECKED_IN'
+  | 'CHECKED_OUT'
+  | 'MISSED'
+  | 'ESCALATED'
+  | 'CANCELLED';
+
+export interface AdminShift {
+  id: string;
+  siteId: string;
+  guardId: string;
+  startTime: string;
+  endTime: string;
+  status: ShiftStatus;
+  preShiftConfirmedAt?: string | null;
+  checkInTime?: string | null;
+  checkInLatitude?: number | string | null;
+  checkInLongitude?: number | string | null;
+  checkInPhotoUrl?: string | null;
+  checkInSiaBadgePhoto?: string | null;
+  checkInPpeVerified?: boolean;
+  checkOutTime?: string | null;
+  checkOutLatitude?: number | string | null;
+  checkOutLongitude?: number | string | null;
+  checkOutPhotoUrl?: string | null;
+  guardPayRateHour: string | number;
+  clientBillingRateHour: string | number;
+  createdAt: string;
+  updatedAt: string;
+  site: {
+    id: string;
+    name: string;
+    address: string;
+    latitude: number | string;
+    longitude: number | string;
+    geofenceRadiusMeters: number;
+    emergencyContact?: string | null;
+    client?: {
+      id?: string;
+      companyName: string;
+    };
+  };
+  guard: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber?: string | null;
+    siaLicenceNumber?: string | null;
+    profilePictureUrl?: string | null;
+    user?: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+    };
+  };
+}
+
+export interface EligibleGuard {
+  id: string;
+  name: string;
+  siaLicenceNumber: string | null;
+  siaExpiryDate: string | null;
+  payRatePerHour: string | number;
+  status: string;
+  isEligible: boolean;
+  ineligibilityReason: string | null;
+  travelWarning: string | null;
+}
+
+export interface CreateShiftPayload {
+  siteId: string;
+  guardId: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface UpdateShiftPayload {
+  siteId?: string;
+  guardId?: string;
+  startTime?: string;
+  endTime?: string;
+  status?: ShiftStatus;
+}
+
 
