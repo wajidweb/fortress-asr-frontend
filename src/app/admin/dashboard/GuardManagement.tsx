@@ -7,6 +7,8 @@ import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore, hasPermission } from '@/store/useAuthStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
+import { ContractsSection } from './ContractsSection';
+import { GuardSiteRatesSection } from './GuardSiteRatesSection';
 import { 
   Users, 
   CheckCircle2, 
@@ -1081,6 +1083,23 @@ export const GuardManagement: React.FC = () => {
                         )}
                       </div>
 
+                    </div>
+
+                    {/* Site-Specific Hourly Pay Rates */}
+                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <GuardSiteRatesSection
+                        guardId={selectedGuard.id}
+                        guardName={modalDisplayName}
+                        baselineRate={selectedGuard.payRatePerHour}
+                      />
+                    </div>
+
+                    {/* Guard Employment Contracts & Contractor Agreements */}
+                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <ContractsSection
+                        guardId={selectedGuard.id}
+                        entityName={modalDisplayName}
+                      />
                     </div>
 
                   </div>

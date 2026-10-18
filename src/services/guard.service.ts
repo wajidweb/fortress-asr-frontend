@@ -42,8 +42,10 @@ export interface GuardShift {
   checkOutLatitude?: number | string | null;
   checkOutLongitude?: number | string | null;
   checkOutPhotoUrl?: string | null;
-  guardPayRateHour: string | number;
-  clientBillingRateHour: string | number;
+  guardPayRateHour?: string | number;
+  scheduledDurationHours?: number;
+  actualWorkedHours?: number | null;
+  estimatedPay?: number;
   createdAt: string;
   updatedAt: string;
   site: GuardShiftSite;
@@ -81,4 +83,61 @@ export const guardService = {
       formData
     );
   },
+
+  // Guard Earnings & Timesheet Report
+  getEarningsReport: (params?: { startDate?: string; endDate?: string; siteId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.siteId) query.append('siteId', params.siteId);
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<GuardEarningsReportData>(`/guard/reports/earnings${qs}`);
+  },
 };
+
+export interface GuardEarningsReportData {
+  currency: string;
+  currencySymbol: string;
+  summary: {
+    totalEarnedWages: number;
+    totalCompletedHours: number;
+    totalCompletedShifts: number;
+    projectedUpcomingWages: number;
+    totalScheduledUpcomingHours: number;
+    totalUpcomingShifts: number;
+    totalInProgressShifts: number;
+    totalMissedShifts: number;
+    averageHourlyPayRate: number;
+  };
+  bySite: Array<{
+    siteId: string;
+    siteName: string;
+    clientName: string;
+    shiftCount: number;
+    completedHours: number;
+    earnedWages: number;
+    payRate: number;
+  }>;
+  timesheet: Array<{
+    shiftId: string;
+    siteId: string;
+    siteName: string;
+    siteAddress: string;
+    clientName: string;
+    startTime: string;
+    endTime: string;
+    status: ShiftStatus;
+    checkInTime?: string | null;
+    checkOutTime?: string | null;
+    scheduledDurationHours: number;
+    actualWorkedHours: number;
+    payRateHour: number;
+    grossPay: number;
+    isCompleted: boolean;
+    isInProgress: boolean;
+    isUpcoming: boolean;
+    isMissed: boolean;
+    isGpsVerified: boolean;
+  }>;
+}

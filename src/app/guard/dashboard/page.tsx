@@ -10,10 +10,11 @@ import LoaderRectangle from '@/components/ui/LoaderRectangle';
 
 // Import modular workspace sub-page components
 import ProfileSettings from './ProfileSettings';
+import { GuardContracts } from './GuardContracts';
 import { 
   MyShifts, ShiftCheckIn, SchedulesRota, PatrolTerminal, 
   OccurrenceBook, IncidentReports, WelfareChecks, SiteInstructions, 
-  PanicAlert 
+  PanicAlert, GuardEarnings 
 } from './WorkspacePanels';
 
 export default function GuardDashboard() {
@@ -102,10 +103,14 @@ export default function GuardDashboard() {
         );
       case 'my-shifts':
         return <MyShifts />;
+      case 'earnings':
+        return <GuardEarnings />;
       case 'check-in':
         return <ShiftCheckIn />;
       case 'my-rota':
         return <SchedulesRota />;
+      case 'guard-contracts':
+        return <GuardContracts />;
       case 'patrol-terminal':
         return <PatrolTerminal />;
       case 'occurrence-book':

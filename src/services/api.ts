@@ -81,6 +81,14 @@ export const api = {
       body: isFormData ? body : JSON.stringify(body) 
     });
   },
+  patch: <T>(endpoint: string, body: any, options?: RequestInit) => {
+    const isFormData = body instanceof FormData;
+    return request<T>(endpoint, { 
+      ...options, 
+      method: 'PATCH', 
+      body: isFormData ? body : JSON.stringify(body) 
+    });
+  },
   delete: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'DELETE' }),
   
   // Specific auth configuration where credentials (cookies) are needed

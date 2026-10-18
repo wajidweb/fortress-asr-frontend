@@ -101,6 +101,8 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Shift Check In';
       case 'my-rota':
         return 'Schedules Rota';
+      case 'guard-contracts':
+        return 'My Employment Contracts';
       case 'patrol-terminal':
         return 'Patrol Terminal';
       case 'occurrence-book':

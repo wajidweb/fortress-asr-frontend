@@ -8,7 +8,8 @@ import {
   AdminSite, 
   GuardProfile, 
   EligibleGuard, 
-  ShiftStatus 
+  ShiftStatus,
+  ShiftPricingSuggestion
 } from '@/services/admin.service';
 import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore, hasPermission } from '@/store/useAuthStore';
@@ -32,7 +33,8 @@ import {
   Layers, 
   AlertCircle,
   Phone,
-  Ban
+  Ban,
+  Coins
 } from 'lucide-react';
 
 type GridViewMode = 'BY_SITE' | 'BY_GUARD';
@@ -92,6 +94,9 @@ export const RotaManagement: React.FC = () => {
   const [formDate, setFormDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [formStartTime, setFormStartTime] = useState('08:00');
   const [formEndTime, setFormEndTime] = useState('20:00');
+  const [formGuardPayRate, setFormGuardPayRate] = useState<string>('');
+  const [formClientBillingRate, setFormClientBillingRate] = useState<string>('');
+  const [pricingSuggestion, setPricingSuggestion] = useState<ShiftPricingSuggestion | null>(null);
   const [eligibleGuards, setEligibleGuards] = useState<EligibleGuard[]>([]);
   const [loadingGuards, setLoadingGuards] = useState(false);
   const [travelWarning, setTravelWarning] = useState<string | null>(null);
@@ -193,6 +198,9 @@ export const RotaManagement: React.FC = () => {
     }
     setFormStartTime('08:00');
     setFormEndTime('20:00');
+    setFormGuardPayRate('');
+    setFormClientBillingRate('');
+    setPricingSuggestion(null);
     setTravelWarning(null);
     setIsCreateModalOpen(true);
   };
@@ -229,11 +237,18 @@ export const RotaManagement: React.FC = () => {
       .then((res) => {
         if (!isMounted) return;
         setEligibleGuards(res.guards || []);
-        // Check if previously selected guard has a travel warning
+        if (res.pricing) {
+          setPricingSuggestion(res.pricing);
+          setFormClientBillingRate((prev) => (prev !== '' ? prev : res.pricing!.suggestedClientBillingRate.toFixed(2)));
+        }
+        // Check if previously selected guard has a site-specific rate or travel warning
         if (formGuardId) {
           const selected = res.guards?.find((g) => g.id === formGuardId);
-          if (selected?.travelWarning) {
-            setTravelWarning(selected.travelWarning);
+          if (selected) {
+            setFormGuardPayRate((prev) => (prev !== '' ? prev : Number(selected.payRatePerHour).toFixed(2)));
+            if (selected.travelWarning) {
+              setTravelWarning(selected.travelWarning);
+            }
           }
         }
       })
@@ -253,10 +268,13 @@ export const RotaManagement: React.FC = () => {
   const handleGuardChange = (guardId: string) => {
     setFormGuardId(guardId);
     const chosen = eligibleGuards.find((g) => g.id === guardId);
-    if (chosen?.travelWarning) {
-      setTravelWarning(chosen.travelWarning);
-    } else {
-      setTravelWarning(null);
+    if (chosen) {
+      setFormGuardPayRate(Number(chosen.payRatePerHour).toFixed(2));
+      if (chosen.travelWarning) {
+        setTravelWarning(chosen.travelWarning);
+      } else {
+        setTravelWarning(null);
+      }
     }
   };
 
@@ -283,6 +301,8 @@ export const RotaManagement: React.FC = () => {
         guardId: formGuardId,
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
+        guardPayRateHour: formGuardPayRate ? parseFloat(formGuardPayRate) : undefined,
+        clientBillingRateHour: formClientBillingRate ? parseFloat(formClientBillingRate) : undefined,
       });
 
       addToast(res.message || 'Shift scheduled successfully!', 'success');
@@ -359,12 +379,35 @@ export const RotaManagement: React.FC = () => {
     });
   };
 
-  // Summary statistics for active week
+  // Summary statistics for active week (operational & commercial pricing)
   const weekStats = useMemo(() => {
     const totalCount = shifts.length;
     const confirmedCount = shifts.filter((s) => s.status === 'CONFIRMED' || s.status === 'CHECKED_IN').length;
-    const totalHours = shifts.reduce((sum, s) => sum + getShiftDurationHours(s.startTime, s.endTime), 0);
-    return { totalCount, confirmedCount, totalHours: Math.round(totalHours) };
+    let totalHours = 0;
+    let totalBilling = 0;
+    let totalWages = 0;
+
+    shifts.forEach((s) => {
+      if (s.status !== 'CANCELLED') {
+        const dur = getShiftDurationHours(s.startTime, s.endTime);
+        totalHours += dur;
+        totalBilling += dur * (Number(s.clientBillingRateHour) || 0);
+        totalWages += dur * (Number(s.guardPayRateHour) || 0);
+      }
+    });
+
+    const totalMargin = totalBilling - totalWages;
+    const marginPct = totalBilling > 0 ? ((totalMargin / totalBilling) * 100).toFixed(1) : '0.0';
+
+    return {
+      totalCount,
+      confirmedCount,
+      totalHours: Number(totalHours.toFixed(1)),
+      totalBilling: Number(totalBilling.toFixed(2)),
+      totalWages: Number(totalWages.toFixed(2)),
+      totalMargin: Number(totalMargin.toFixed(2)),
+      marginPct,
+    };
   }, [shifts]);
 
   const selectedSiteObj = useMemo(() => {
@@ -390,6 +433,36 @@ export const RotaManagement: React.FC = () => {
     return Math.max(0, (e - s) / (1000 * 60 * 60));
   }, [formDate, formStartTime, formEndTime]);
 
+  const activePayRate = useMemo(() => {
+    if (formGuardPayRate !== '') return parseFloat(formGuardPayRate) || 0;
+    if (selectedGuardObj) return Number(selectedGuardObj.payRatePerHour) || 0;
+    return 0;
+  }, [formGuardPayRate, selectedGuardObj]);
+
+  const activeBillingRate = useMemo(() => {
+    if (formClientBillingRate !== '') return parseFloat(formClientBillingRate) || 0;
+    if (pricingSuggestion) return pricingSuggestion.suggestedClientBillingRate || 0;
+    if (selectedSiteObj && Number(selectedSiteObj.billingRateHour) > 0) return Number(selectedSiteObj.billingRateHour);
+    if (selectedSiteObj?.client && Number(selectedSiteObj.client.billingRateHour) > 0) return Number(selectedSiteObj.client.billingRateHour);
+    return 0;
+  }, [formClientBillingRate, pricingSuggestion, selectedSiteObj]);
+
+  const modalWageTotal = useMemo(() => {
+    return activePayRate * estimatedDurationHours;
+  }, [activePayRate, estimatedDurationHours]);
+
+  const modalBillingTotal = useMemo(() => {
+    return activeBillingRate * estimatedDurationHours;
+  }, [activeBillingRate, estimatedDurationHours]);
+
+  const modalMargin = useMemo(() => {
+    return modalBillingTotal - modalWageTotal;
+  }, [modalBillingTotal, modalWageTotal]);
+
+  const modalMarginPct = useMemo(() => {
+    return modalBillingTotal > 0 ? ((modalMargin / modalBillingTotal) * 100).toFixed(1) : '0.0';
+  }, [modalBillingTotal, modalMargin]);
+
   return (
     <div className="w-full flex flex-col gap-6 font-jakarta antialiased">
       {/* Top Header Card */}
@@ -411,21 +484,33 @@ export const RotaManagement: React.FC = () => {
         </div>
 
         {/* Quick Stats Pill */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="flex items-center gap-3 bg-slate-50 border-2 border-black/10 rounded-xl px-4 py-2.5">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <div className="flex items-center gap-3 bg-slate-50 border-2 border-black/10 rounded-xl px-4 py-2 flex-wrap">
             <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Total Shifts</span>
-              <span className="text-sm font-black text-black">{weekStats.totalCount}</span>
-            </div>
-            <div className="h-6 w-px bg-slate-200" />
-            <div className="flex flex-col">
-              <span className="text-[8px] font-black uppercase tracking-wider text-emerald-600">Confirmed</span>
-              <span className="text-sm font-black text-emerald-700">{weekStats.confirmedCount}</span>
+              <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Rostered</span>
+              <span className="text-sm font-black text-black">{weekStats.totalCount} shifts</span>
             </div>
             <div className="h-6 w-px bg-slate-200" />
             <div className="flex flex-col">
               <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Total Hours</span>
-              <span className="text-sm font-black text-black">{weekStats.totalHours} hrs</span>
+              <span className="text-sm font-black text-black">{weekStats.totalHours}h</span>
+            </div>
+            <div className="h-6 w-px bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black uppercase tracking-wider text-blue-700">Est. Billing</span>
+              <span className="text-sm font-black text-blue-950">£{weekStats.totalBilling.toLocaleString('en-GB')}</span>
+            </div>
+            <div className="h-6 w-px bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black uppercase tracking-wider text-slate-500">Est. Wages</span>
+              <span className="text-sm font-black text-slate-900">£{weekStats.totalWages.toLocaleString('en-GB')}</span>
+            </div>
+            <div className="h-6 w-px bg-slate-200" />
+            <div className="flex flex-col">
+              <span className="text-[8px] font-black uppercase tracking-wider text-emerald-700">Gross Margin</span>
+              <span className="text-sm font-black text-emerald-800">
+                £{weekStats.totalMargin.toLocaleString('en-GB')} ({weekStats.marginPct}%)
+              </span>
             </div>
           </div>
 
@@ -661,10 +746,15 @@ export const RotaManagement: React.FC = () => {
                                       </span>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 truncate">
-                                      <User className="w-3 h-3 text-slate-400 shrink-0" />
-                                      <span className="text-[11px] font-bold text-black truncate">
-                                        {shift.guard?.firstName} {shift.guard?.lastName}
+                                    <div className="flex items-center justify-between gap-1">
+                                      <div className="flex items-center gap-1.5 truncate">
+                                        <User className="w-3 h-3 text-slate-400 shrink-0" />
+                                        <span className="text-[11px] font-bold text-black truncate">
+                                          {shift.guard?.firstName} {shift.guard?.lastName}
+                                        </span>
+                                      </div>
+                                      <span className="text-[8px] font-black font-mono text-emerald-800 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-200 shrink-0">
+                                        £{Number(shift.guardPayRateHour || 0).toFixed(0)}/h
                                       </span>
                                     </div>
                                   </div>
@@ -762,10 +852,15 @@ export const RotaManagement: React.FC = () => {
                                       </span>
                                     </div>
 
-                                    <div className="flex items-center gap-1.5 truncate">
-                                      <Building className="w-3 h-3 text-slate-400 shrink-0" />
-                                      <span className="text-[11px] font-bold text-black truncate">
-                                        {shift.site?.name}
+                                    <div className="flex items-center justify-between gap-1">
+                                      <div className="flex items-center gap-1.5 truncate">
+                                        <Building className="w-3 h-3 text-slate-400 shrink-0" />
+                                        <span className="text-[11px] font-bold text-black truncate">
+                                          {shift.site?.name}
+                                        </span>
+                                      </div>
+                                      <span className="text-[8px] font-black font-mono text-blue-900 bg-blue-50 px-1 py-0.5 rounded border border-blue-200 shrink-0">
+                                        £{Number(shift.clientBillingRateHour || 0).toFixed(0)}/h
                                       </span>
                                     </div>
                                   </div>
@@ -946,8 +1041,67 @@ export const RotaManagement: React.FC = () => {
                 )}
               </div>
 
+              {/* Financial Rate Snapshots & Overrides */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                      Officer Pay Rate (£/hr)
+                    </label>
+                    {selectedGuardObj?.hasSiteSpecificRate && (
+                      <span className="text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">
+                        Site Rate Active
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    placeholder="Auto-resolved pay rate"
+                    value={formGuardPayRate}
+                    onChange={(e) => setFormGuardPayRate(e.target.value)}
+                    className="px-3 py-1.5 text-xs font-black border border-slate-300 rounded-lg focus:outline-none focus:border-black bg-white"
+                  />
+                  <span className="text-[9px] text-slate-400 font-semibold">
+                    {selectedGuardObj?.hasSiteSpecificRate
+                      ? `Agreed site rate (Base: £${Number(selectedGuardObj.basePayRatePerHour || 0).toFixed(2)}/hr)`
+                      : 'Standard officer hourly wage'}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                      Client Charge Rate (£/hr)
+                    </label>
+                    {pricingSuggestion && (
+                      <span className="text-[8px] font-black uppercase tracking-wider bg-blue-100 text-blue-900 px-1.5 py-0.5 rounded">
+                        {pricingSuggestion.rateTier.replace('_', ' ')}
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    placeholder="Auto-resolved client rate"
+                    value={formClientBillingRate}
+                    onChange={(e) => setFormClientBillingRate(e.target.value)}
+                    className="px-3 py-1.5 text-xs font-black border border-slate-300 rounded-lg focus:outline-none focus:border-black bg-white"
+                  />
+                  <span className="text-[9px] text-slate-400 font-semibold">
+                    {pricingSuggestion?.isWeekend
+                      ? 'Weekend pricing rule applied'
+                      : pricingSuggestion?.isNightShift
+                      ? 'Night shift pricing rule applied'
+                      : 'Contracted client billing rate'}
+                  </span>
+                </div>
+              </div>
+
               {/* Commercials & Snapshot Summary */}
-              <div className="p-4 bg-slate-50 border-2 border-black/10 rounded-xl flex items-center justify-between text-black">
+              <div className="p-4 bg-white border-2 border-black rounded-xl grid grid-cols-2 sm:grid-cols-4 gap-3 text-black shadow-2xs">
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Duration</span>
                   <div className="flex items-center gap-1.5">
@@ -959,18 +1113,34 @@ export const RotaManagement: React.FC = () => {
                     )}
                   </div>
                 </div>
-                <div className="h-6 w-px bg-slate-200" />
+
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Officer Pay</span>
-                  <span className="text-xs font-black text-black">
-                    £{selectedGuardObj ? (Number(selectedGuardObj.payRatePerHour) * estimatedDurationHours).toFixed(2) : '0.00'}
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Officer Wages</span>
+                  <span className="text-xs font-black text-slate-900">
+                    £{modalWageTotal.toFixed(2)}
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-semibold">
+                    @ £{activePayRate.toFixed(2)}/hr
                   </span>
                 </div>
-                <div className="h-6 w-px bg-slate-200" />
+
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Client Billing</span>
-                  <span className="text-xs font-black text-emerald-800">
-                    £{selectedSiteObj?.client ? (Number(selectedSiteObj.client.billingRateHour || 0) * estimatedDurationHours).toFixed(2) : '0.00'}
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Client Billed</span>
+                  <span className="text-xs font-black text-blue-950">
+                    £{modalBillingTotal.toFixed(2)}
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-semibold">
+                    @ £{activeBillingRate.toFixed(2)}/hr
+                  </span>
+                </div>
+
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">Gross Margin</span>
+                  <span className={`text-xs font-black ${modalMargin >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    £{modalMargin.toFixed(2)} ({modalMarginPct}%)
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-semibold">
+                    Projected return
                   </span>
                 </div>
               </div>
@@ -1082,6 +1252,49 @@ export const RotaManagement: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Shift Economics Summary */}
+              {(() => {
+                const shiftDuration = getShiftDurationHours(
+                  selectedShiftForDetails.startTime,
+                  selectedShiftForDetails.endTime
+                );
+                const payRate = Number(selectedShiftForDetails.guardPayRateHour) || 0;
+                const billRate = Number(selectedShiftForDetails.clientBillingRateHour) || 0;
+                const shiftWages = shiftDuration * payRate;
+                const shiftCharges = shiftDuration * billRate;
+                const shiftDiff = shiftCharges - shiftWages;
+                const shiftMargin = shiftCharges > 0 ? ((shiftDiff / shiftCharges) * 100).toFixed(1) : '0.0';
+
+                return (
+                  <div className="p-3 bg-white border-2 border-black/10 rounded-xl grid grid-cols-3 gap-2 text-center shadow-2xs">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                        Shift Wages ({shiftDuration.toFixed(1)}h)
+                      </span>
+                      <span className="text-xs font-black text-slate-800">
+                        £{shiftWages.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                        Client Billed
+                      </span>
+                      <span className="text-xs font-black text-blue-950">
+                        £{shiftCharges.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">
+                        Gross Margin
+                      </span>
+                      <span className={`text-xs font-black ${shiftDiff >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                        £{shiftDiff.toFixed(2)} ({shiftMargin}%)
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Pre-Shift Confirmation Status */}
               <div className="p-3 border border-slate-200 rounded-xl flex items-center justify-between">

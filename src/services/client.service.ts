@@ -44,6 +44,17 @@ export interface SiteServiceRequest {
   surveyContactPhone?: string | null;
   surveyNotes?: string | null;
   surveyConductedAt?: string | null;
+  // Commercial Pricing & Rates
+  pricingStatus?: 'DRAFT' | 'PROPOSED' | 'AGREED' | 'SUPERSEDED' | null;
+  chargeRatePerHour?: number | string | null;
+  expectedShiftDurationHours?: number | string | null;
+  expectedWeeklyHours?: number | string | null;
+  expectedMonthlyHours?: number | string | null;
+  nightRatePerHour?: number | string | null;
+  weekendRatePerHour?: number | string | null;
+  overtimeRatePerHour?: number | string | null;
+  vatTreatment?: string | null;
+  pricingNotes?: string | null;
   createdAt: string;
   updatedAt: string;
   site?: {
@@ -53,6 +64,8 @@ export interface SiteServiceRequest {
     latitude?: number | string;
     longitude?: number | string;
     geofenceRadiusMeters?: number;
+    billingRateHour?: number | string | null;
+    vatTreatment?: string | null;
   } | null;
 }
 
@@ -65,6 +78,8 @@ export interface ClientSite {
   geofenceRadiusMeters: number;
   siteInstructions?: string | null;
   emergencyContact?: string | null;
+  billingRateHour?: number | string | null;
+  vatTreatment?: string | null;
   activeOfficersCount: number;
   activeShifts: Array<{
     id: string;
@@ -100,6 +115,11 @@ export interface ClientSite {
     surveyContactPhone?: string | null;
     surveyNotes?: string | null;
     surveyConductedAt?: string | null;
+    pricingStatus?: 'DRAFT' | 'PROPOSED' | 'AGREED' | 'SUPERSEDED' | null;
+    chargeRatePerHour?: number | string | null;
+    expectedWeeklyHours?: number | string | null;
+    vatTreatment?: string | null;
+    pricingNotes?: string | null;
     visitAssignee?: {
       id: string;
       firstName: string;
@@ -189,4 +209,116 @@ export const clientService = {
   getSiteById: (id: string) => {
     return api.get<{ site: ClientSite }>(`/client/sites/${id}`);
   },
+
+  // Corporate Client Property Deployment Shifts & Rota
+  getShifts: (params?: { siteId?: string; startDate?: string; endDate?: string; status?: string; upcoming?: boolean }) => {
+    const query = new URLSearchParams();
+    if (params?.siteId) query.append('siteId', params.siteId);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.status && params.status !== 'ALL') query.append('status', params.status);
+    if (params?.upcoming) query.append('upcoming', 'true');
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<{ shifts: ClientShift[] }>(`/client/shifts${qs}`);
+  },
+
+  // Corporate Client Billing & Service Attendance Report
+  getBillingReport: (params?: { startDate?: string; endDate?: string; siteId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.siteId) query.append('siteId', params.siteId);
+
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<ClientBillingReportData>(`/client/reports/billing${qs}`);
+  },
 };
+
+export interface ClientBillingReportData {
+  currency: string;
+  currencySymbol: string;
+  summary: {
+    totalDeliveredHours: number;
+    totalDeliveredChargesNet: number;
+    totalDeliveredChargesVat: number;
+    totalDeliveredChargesGross: number;
+    totalScheduledUpcomingHours: number;
+    totalProjectedUpcomingChargesNet: number;
+    totalDeliveredShifts: number;
+    totalInProgressShifts: number;
+    totalUpcomingShifts: number;
+    totalMissedShifts: number;
+    averageHourlyBillingRate: number;
+    notice: string;
+  };
+  bySite: Array<{
+    siteId: string;
+    siteName: string;
+    siteAddress: string;
+    vatTreatment: string;
+    clientRate: number;
+    shiftCount: number;
+    deliveredHours: number;
+    deliveredNet: number;
+    deliveredVat: number;
+    deliveredGross: number;
+  }>;
+  shiftDeliveryLogs: Array<{
+    shiftId: string;
+    siteId: string;
+    siteName: string;
+    siteAddress: string;
+    officerName: string;
+    siaBadge: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    checkInTime?: string | null;
+    checkOutTime?: string | null;
+    scheduledDurationHours: number;
+    deliveredHours: number;
+    clientRateHour: number;
+    netCharge: number;
+    vatAmount: number;
+    grossCharge: number;
+    vatTreatment: string;
+    isCompleted: boolean;
+    isInProgress: boolean;
+    isUpcoming: boolean;
+    isMissed: boolean;
+    isGpsVerified: boolean;
+  }>;
+}
+
+export interface ClientShift {
+  id: string;
+  siteId: string;
+  guardId: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  checkInTime?: string | null;
+  checkOutTime?: string | null;
+  clientBillingRateHour: number;
+  scheduledDurationHours: number;
+  actualDeliveredHours?: number | null;
+  netCharge: number;
+  vatAmount: number;
+  grossCharge: number;
+  site?: {
+    id: string;
+    name: string;
+    address: string;
+    billingRateHour: number;
+    vatTreatment?: string | null;
+    geofenceRadiusMeters: number;
+  };
+  guard?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    siaLicenceNumber?: string | null;
+    profilePictureUrl?: string | null;
+  };
+}

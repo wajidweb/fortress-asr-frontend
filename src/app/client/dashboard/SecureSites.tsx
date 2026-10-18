@@ -26,7 +26,8 @@ import {
   ChevronRight,
   Shield,
   Layers,
-  Calendar
+  Calendar,
+  Coins
 } from 'lucide-react';
 
 interface SecureSitesProps {
@@ -308,6 +309,9 @@ export const SecureSites: React.FC<SecureSitesProps> = ({ onNavigateToRequests }
                     Property & Physical Address
                   </th>
                   <th className="py-3.5 px-4 font-black uppercase text-[10px] tracking-wider">
+                    Contracted Rate (£/hr)
+                  </th>
+                  <th className="py-3.5 px-4 font-black uppercase text-[10px] tracking-wider">
                     GPS Geofence Perimeter
                   </th>
                   <th className="py-3.5 px-4 font-black uppercase text-[10px] tracking-wider">
@@ -356,6 +360,22 @@ export const SecureSites: React.FC<SecureSitesProps> = ({ onNavigateToRequests }
                           </div>
                         )}
                       </div>
+                    </td>
+
+                    {/* Contracted Billing Rate */}
+                    <td className="py-3.5 px-4">
+                      {site.billingRateHour && Number(site.billingRateHour) > 0 ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-black text-[#032031] text-xs">
+                            £{Number(site.billingRateHour).toFixed(2)}/hr
+                          </span>
+                          <span className="text-[9px] font-bold uppercase text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded w-fit">
+                            Contracted Rate
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-[10px]">Standard Master Terms</span>
+                      )}
                     </td>
 
                     {/* GPS Coordinates & Geofence Radius */}
@@ -616,6 +636,37 @@ export const SecureSites: React.FC<SecureSitesProps> = ({ onNavigateToRequests }
               {/* Right Column (5 cols on lg): Live Officers Roster, Orders & Emergency Contacts */}
               <div className="lg:col-span-5 flex flex-col gap-4 border-t lg:border-t-0 lg:border-l border-slate-200 lg:pl-6 pt-5 lg:pt-0">
                 
+                {/* Contracted Commercial Billing Terms */}
+                <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/50 flex flex-col gap-2.5 shadow-2xs">
+                  <div className="flex items-center justify-between border-b border-indigo-200/80 pb-2">
+                    <span className="font-black text-indigo-950 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      <Coins className="w-3.5 h-3.5 text-indigo-700" />
+                      Contracted Commercial Terms
+                    </span>
+                    <span className="text-[9px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                      Agreed Terms
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-2.5 bg-white rounded-lg border border-indigo-100 flex flex-col">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Hourly Billing Rate</span>
+                      <span className="text-sm font-black text-[#032031]">
+                        {selectedSite.billingRateHour && Number(selectedSite.billingRateHour) > 0
+                          ? `£${Number(selectedSite.billingRateHour).toFixed(2)}/hr`
+                          : 'Master Contract Rate'}
+                      </span>
+                    </div>
+
+                    <div className="p-2.5 bg-white rounded-lg border border-indigo-100 flex flex-col">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">VAT Treatment</span>
+                      <span className="text-xs font-bold text-slate-800">
+                        {selectedSite.vatTreatment ? selectedSite.vatTreatment.replace('_', ' ') : 'Standard VAT (20%)'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Officers Currently On Duty */}
                 <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">

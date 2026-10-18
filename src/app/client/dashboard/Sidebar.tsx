@@ -7,7 +7,7 @@ import {
   Settings, Calendar, ClipboardList, LayoutGrid,
   Activity, AlertTriangle, ShieldCheck, FileText, 
   Shield, ChevronLeft, ChevronRight as ChevronRightIcon,
-  Building2, Lock, ShieldAlert
+  Building2, Lock, ShieldAlert, Receipt
 } from 'lucide-react';
 import { User } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
@@ -235,6 +235,58 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Lock className="w-3 h-3 text-white/40 shrink-0" />
                 ) : (
                   <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-dob' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                )}
+              </button>
+
+              {/* Service Contracts & Agreements */}
+              <button 
+                onClick={() => handleMenuClick('client-contracts')}
+                disabled={!isProfileComplete}
+                title={!isProfileComplete ? "Complete profile setup to unlock" : "Contracts & Agreements"}
+                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
+                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                  ${!isProfileComplete 
+                    ? 'opacity-40 cursor-not-allowed hover:bg-transparent text-white/50' 
+                    : (activeMenu === 'client-contracts' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white')
+                  }
+                `}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                    Service Contracts
+                  </span>
+                </div>
+                {isSidebarOpen && !isProfileComplete ? (
+                  <Lock className="w-3 h-3 text-white/40 shrink-0" />
+                ) : (
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-contracts' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                )}
+              </button>
+
+              {/* Billing & Service Reports */}
+              <button 
+                onClick={() => handleMenuClick('client-billing')}
+                disabled={!isProfileComplete}
+                title={!isProfileComplete ? "Complete profile setup to unlock" : "Billing & Service Reports"}
+                className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
+                  ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                  ${!isProfileComplete 
+                    ? 'opacity-40 cursor-not-allowed hover:bg-transparent text-white/50' 
+                    : (activeMenu === 'client-billing' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white')
+                  }
+                `}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <Receipt className="w-3.5 h-3.5 shrink-0" />
+                  <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                    Billing & Reports
+                  </span>
+                </div>
+                {isSidebarOpen && !isProfileComplete ? (
+                  <Lock className="w-3 h-3 text-white/40 shrink-0" />
+                ) : (
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'client-billing' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
                 )}
               </button>
 

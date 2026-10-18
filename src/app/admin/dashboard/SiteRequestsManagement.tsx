@@ -8,8 +8,10 @@ import {
   RecordSurveyNotesPayload,
   ServiceRequestStatus, 
   ServiceRequestUrgency,
-  ApproveSiteRequestPayload
+  ApproveSiteRequestPayload,
+  PricingStatus
 } from '@/services/admin.service';
+import { ContractsSection } from './ContractsSection';
 import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore, hasPermission } from '@/store/useAuthStore';
 import { getFullImageUrl } from '@/services/api';
@@ -45,7 +47,10 @@ import {
   RotateCw,
   RotateCcw,
   Locate,
-  ClipboardCheck
+  ClipboardCheck,
+  Coins,
+  FileSpreadsheet,
+  Receipt
 } from 'lucide-react';
 
 export const SiteRequestsManagement: React.FC = () => {
@@ -93,6 +98,24 @@ export const SiteRequestsManagement: React.FC = () => {
     siteInstructions: '',
     emergencyContact: '',
     adminFeedbackNotes: '',
+    billingRateHour: 0,
+    vatTreatment: 'STANDARD_20',
+  });
+
+  // Dedicated Commercial Pricing Modal State
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [pricingForm, setPricingForm] = useState({
+    pricingStatus: 'PROPOSED' as PricingStatus,
+    chargeRatePerHour: '',
+    expectedShiftDurationHours: '12',
+    expectedWeeklyHours: '84',
+    expectedMonthlyHours: '',
+    nightRatePerHour: '',
+    weekendRatePerHour: '',
+    overtimeRatePerHour: '',
+    vatTreatment: 'STANDARD_20',
+    pricingNotes: '',
+    requiredGuardsCount: 1,
   });
 
   // Decline Dialog
@@ -122,6 +145,15 @@ export const SiteRequestsManagement: React.FC = () => {
     surveyContactPhone: string;
     surveyNotes: string;
     surveyConductedAt: string;
+    pricingStatus: PricingStatus;
+    chargeRatePerHour: string;
+    expectedShiftDurationHours: string;
+    expectedWeeklyHours: string;
+    nightRatePerHour: string;
+    weekendRatePerHour: string;
+    overtimeRatePerHour: string;
+    vatTreatment: string;
+    pricingNotes: string;
   }>({
     surveyLatitude: '',
     surveyLongitude: '',
@@ -130,6 +162,15 @@ export const SiteRequestsManagement: React.FC = () => {
     surveyContactPhone: '',
     surveyNotes: '',
     surveyConductedAt: '',
+    pricingStatus: 'PROPOSED',
+    chargeRatePerHour: '',
+    expectedShiftDurationHours: '12',
+    expectedWeeklyHours: '84',
+    nightRatePerHour: '',
+    weekendRatePerHour: '',
+    overtimeRatePerHour: '',
+    vatTreatment: 'STANDARD_20',
+    pricingNotes: '',
   });
 
   // Row Selection State for Targeted Export / Print
@@ -235,6 +276,12 @@ export const SiteRequestsManagement: React.FC = () => {
       ? `${req.surveyContactName} (${req.surveyContactPhone || ''})`.trim()
       : req.emergencyContactName ? `${req.emergencyContactName} (${req.emergencyContactPhone || ''})`.trim() : '';
 
+    const effectiveBillingRate = req.chargeRatePerHour !== undefined && req.chargeRatePerHour !== null
+      ? Number(req.chargeRatePerHour)
+      : req.client?.billingRateHour
+      ? Number(req.client.billingRateHour)
+      : 0;
+
     setProvisionForm({
       latitude: effectiveLat,
       longitude: effectiveLng,
@@ -242,6 +289,8 @@ export const SiteRequestsManagement: React.FC = () => {
       siteInstructions: effectiveInstructions,
       emergencyContact: effectiveContact,
       adminFeedbackNotes: 'Deployment request approved. Site provisioned for security operations scheduling.',
+      billingRateHour: effectiveBillingRate,
+      vatTreatment: req.vatTreatment || 'STANDARD_20',
     });
     setAssessmentNotes(req.adminFeedbackNotes || '');
     setIsDeployModalOpen(true);
@@ -268,8 +317,65 @@ export const SiteRequestsManagement: React.FC = () => {
       surveyConductedAt: req.surveyConductedAt
         ? new Date(req.surveyConductedAt).toISOString().slice(0, 16)
         : now.toISOString().slice(0, 16),
+      pricingStatus: (req.pricingStatus as PricingStatus) || 'PROPOSED',
+      chargeRatePerHour: req.chargeRatePerHour !== undefined && req.chargeRatePerHour !== null ? String(req.chargeRatePerHour) : '',
+      expectedShiftDurationHours: req.expectedShiftDurationHours ? String(req.expectedShiftDurationHours) : '12',
+      expectedWeeklyHours: req.expectedWeeklyHours ? String(req.expectedWeeklyHours) : '84',
+      nightRatePerHour: req.nightRatePerHour ? String(req.nightRatePerHour) : '',
+      weekendRatePerHour: req.weekendRatePerHour ? String(req.weekendRatePerHour) : '',
+      overtimeRatePerHour: req.overtimeRatePerHour ? String(req.overtimeRatePerHour) : '',
+      vatTreatment: req.vatTreatment || 'STANDARD_20',
+      pricingNotes: req.pricingNotes || '',
     });
     setIsSurveyModalOpen(true);
+  };
+
+  const handleOpenPricingModal = (req: AdminSiteServiceRequest) => {
+    setSelectedRequest(req);
+    setPricingForm({
+      pricingStatus: (req.pricingStatus as PricingStatus) || 'PROPOSED',
+      chargeRatePerHour: req.chargeRatePerHour !== undefined && req.chargeRatePerHour !== null ? String(req.chargeRatePerHour) : '',
+      expectedShiftDurationHours: req.expectedShiftDurationHours ? String(req.expectedShiftDurationHours) : '12',
+      expectedWeeklyHours: req.expectedWeeklyHours ? String(req.expectedWeeklyHours) : '84',
+      expectedMonthlyHours: req.expectedMonthlyHours ? String(req.expectedMonthlyHours) : '',
+      nightRatePerHour: req.nightRatePerHour ? String(req.nightRatePerHour) : '',
+      weekendRatePerHour: req.weekendRatePerHour ? String(req.weekendRatePerHour) : '',
+      overtimeRatePerHour: req.overtimeRatePerHour ? String(req.overtimeRatePerHour) : '',
+      vatTreatment: req.vatTreatment || 'STANDARD_20',
+      pricingNotes: req.pricingNotes || '',
+      requiredGuardsCount: req.requiredGuardsCount || 1,
+    });
+    setIsPricingModalOpen(true);
+  };
+
+  const handlePricingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRequest) return;
+    setActionLoading(true);
+    try {
+      const res = await adminService.updateSiteServiceRequestPricing(selectedRequest.id, {
+        pricingStatus: pricingForm.pricingStatus,
+        chargeRatePerHour: pricingForm.chargeRatePerHour ? parseFloat(pricingForm.chargeRatePerHour) : null,
+        expectedShiftDurationHours: pricingForm.expectedShiftDurationHours ? parseFloat(pricingForm.expectedShiftDurationHours) : null,
+        expectedWeeklyHours: pricingForm.expectedWeeklyHours ? parseFloat(pricingForm.expectedWeeklyHours) : null,
+        expectedMonthlyHours: pricingForm.expectedMonthlyHours ? parseFloat(pricingForm.expectedMonthlyHours) : null,
+        nightRatePerHour: pricingForm.nightRatePerHour ? parseFloat(pricingForm.nightRatePerHour) : null,
+        weekendRatePerHour: pricingForm.weekendRatePerHour ? parseFloat(pricingForm.weekendRatePerHour) : null,
+        overtimeRatePerHour: pricingForm.overtimeRatePerHour ? parseFloat(pricingForm.overtimeRatePerHour) : null,
+        vatTreatment: pricingForm.vatTreatment || null,
+        pricingNotes: pricingForm.pricingNotes || null,
+        requiredGuardsCount: pricingForm.requiredGuardsCount,
+      });
+
+      addToast('Commercial pricing terms saved successfully!', 'success');
+      setSelectedRequest(res.request);
+      setRequests((prev) => prev.map((r) => (r.id === res.request.id ? res.request : r)));
+      setIsPricingModalOpen(false);
+    } catch (err: any) {
+      addToast(err.message || 'Failed to update pricing', 'error');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleGetBrowserLocation = () => {
@@ -312,9 +418,18 @@ export const SiteRequestsManagement: React.FC = () => {
         surveyContactPhone: surveyForm.surveyContactPhone?.trim() || null,
         surveyNotes: surveyForm.surveyNotes?.trim() || null,
         surveyConductedAt: surveyForm.surveyConductedAt ? new Date(surveyForm.surveyConductedAt).toISOString() : new Date().toISOString(),
+        pricingStatus: surveyForm.pricingStatus,
+        chargeRatePerHour: surveyForm.chargeRatePerHour ? parseFloat(surveyForm.chargeRatePerHour) : null,
+        expectedShiftDurationHours: surveyForm.expectedShiftDurationHours ? parseFloat(surveyForm.expectedShiftDurationHours) : null,
+        expectedWeeklyHours: surveyForm.expectedWeeklyHours ? parseFloat(surveyForm.expectedWeeklyHours) : null,
+        nightRatePerHour: surveyForm.nightRatePerHour ? parseFloat(surveyForm.nightRatePerHour) : null,
+        weekendRatePerHour: surveyForm.weekendRatePerHour ? parseFloat(surveyForm.weekendRatePerHour) : null,
+        overtimeRatePerHour: surveyForm.overtimeRatePerHour ? parseFloat(surveyForm.overtimeRatePerHour) : null,
+        vatTreatment: surveyForm.vatTreatment || null,
+        pricingNotes: surveyForm.pricingNotes || null,
       });
 
-      addToast('On-site survey findings and coordinates recorded successfully!', 'success');
+      addToast('On-site survey findings and pricing terms recorded successfully!', 'success');
       setIsSurveyModalOpen(false);
       await loadRequests();
     } catch (err: any) {
@@ -337,6 +452,8 @@ export const SiteRequestsManagement: React.FC = () => {
         siteInstructions: provisionForm.siteInstructions || null,
         emergencyContact: provisionForm.emergencyContact || null,
         adminFeedbackNotes: provisionForm.adminFeedbackNotes || null,
+        billingRateHour: provisionForm.billingRateHour ? Number(provisionForm.billingRateHour) : undefined,
+        vatTreatment: provisionForm.vatTreatment || null,
       });
 
       addToast(`Site "${selectedRequest.propertyName}" successfully approved and deployed!`, 'success');
@@ -1417,6 +1534,103 @@ export const SiteRequestsManagement: React.FC = () => {
                   )}
                 </div>
 
+                {/* Commercial Terms & Client Pricing Card */}
+                <div className="p-3.5 sm:p-4 rounded-xl border border-indigo-200 bg-indigo-50/50 flex flex-col gap-3 shadow-2xs">
+                  <div className="flex items-center justify-between border-b border-indigo-200/70 pb-2 flex-wrap gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                      <Coins className="w-3.5 h-3.5 text-indigo-700" />
+                      Commercial Pricing & Charge Rates (£ GBP)
+                    </span>
+                    <span
+                      className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${
+                        selectedRequest.pricingStatus === 'AGREED'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : selectedRequest.pricingStatus === 'PROPOSED'
+                          ? 'bg-indigo-100 text-indigo-800 border border-indigo-300'
+                          : selectedRequest.pricingStatus === 'SUPERSEDED'
+                          ? 'bg-slate-200 text-slate-700 border border-slate-300'
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}
+                    >
+                      {selectedRequest.pricingStatus || 'DRAFT'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-[11px]">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Hourly Charge Rate</span>
+                      <span className="font-black text-xs sm:text-sm text-[#032031]">
+                        {selectedRequest.chargeRatePerHour ? `£${Number(selectedRequest.chargeRatePerHour).toFixed(2)}/hr` : 'Not Proposed'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Est. Weekly Hours</span>
+                      <span className="font-black text-xs sm:text-sm text-[#032031]">
+                        {selectedRequest.expectedWeeklyHours ? `${selectedRequest.expectedWeeklyHours} hrs/wk` : 'TBD'}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col col-span-2 sm:col-span-1">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Est. Weekly Billing</span>
+                      <span className="font-black text-xs sm:text-sm text-emerald-700">
+                        {selectedRequest.chargeRatePerHour && selectedRequest.expectedWeeklyHours
+                          ? `£${(Number(selectedRequest.chargeRatePerHour) * Number(selectedRequest.expectedWeeklyHours)).toFixed(2)}`
+                          : '—'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Special Rates breakdown if applicable */}
+                  {(selectedRequest.nightRatePerHour || selectedRequest.weekendRatePerHour || selectedRequest.overtimeRatePerHour) && (
+                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-indigo-200/50 text-[10px]">
+                      {selectedRequest.nightRatePerHour && (
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-bold text-slate-500 uppercase">Night Rate</span>
+                          <span className="font-bold text-[#032031]">£{Number(selectedRequest.nightRatePerHour).toFixed(2)}/hr</span>
+                        </div>
+                      )}
+                      {selectedRequest.weekendRatePerHour && (
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-bold text-slate-500 uppercase">Weekend Rate</span>
+                          <span className="font-bold text-[#032031]">£{Number(selectedRequest.weekendRatePerHour).toFixed(2)}/hr</span>
+                        </div>
+                      )}
+                      {selectedRequest.overtimeRatePerHour && (
+                        <div className="flex flex-col">
+                          <span className="text-[8px] font-bold text-slate-500 uppercase">Overtime Rate</span>
+                          <span className="font-bold text-[#032031]">£{Number(selectedRequest.overtimeRatePerHour).toFixed(2)}/hr</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-indigo-200/50">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase">VAT Treatment</span>
+                    <span className="font-semibold text-slate-700">{selectedRequest.vatTreatment || 'Standard UK VAT (20%)'}</span>
+                  </div>
+
+                  {selectedRequest.pricingNotes && (
+                    <div className="flex flex-col text-[11px] pt-1.5 border-t border-indigo-200/50">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase">Commercial Notes</span>
+                      <p className="text-[11px] font-medium text-slate-700 bg-white/80 p-2 rounded-lg border border-indigo-200/50">
+                        {selectedRequest.pricingNotes}
+                      </p>
+                    </div>
+                  )}
+
+                  {canAssess && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenPricingModal(selectedRequest)}
+                      className="mt-1 w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                    >
+                      <Coins className="w-3.5 h-3.5" />
+                      {selectedRequest.chargeRatePerHour ? 'Update Pricing Terms' : 'Record Proposed Pricing'}
+                    </button>
+                  )}
+                </div>
+
                 {/* Site Hazards / Special Instructions (if present) */}
                 {selectedRequest.specialInstructions && (
                   <div className="p-3.5 sm:p-4 rounded-xl border border-amber-300 bg-amber-50/70 flex flex-col gap-1 text-amber-950 shadow-2xs">
@@ -1481,6 +1695,42 @@ export const SiteRequestsManagement: React.FC = () => {
                       />
                     </div>
 
+                    {/* Agreed Commercial Terms for the New Site */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-indigo-50/50 rounded-xl border border-indigo-200/60">
+                      <div className="flex flex-col gap-1">
+                        <label className="font-bold text-[#032031] text-[11px]">
+                          Agreed Site Billing Rate (£/hr) *
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={provisionForm.billingRateHour || ''}
+                          onChange={(e) => setProvisionForm({ ...provisionForm, billingRateHour: e.target.value ? parseFloat(e.target.value) : 0 })}
+                          placeholder="e.g. 24.50"
+                          className="h-9 px-3 border border-slate-300 rounded-lg font-bold text-xs bg-white focus:outline-none focus:border-[#032031]"
+                        />
+                        <span className="text-[9px] text-slate-500 font-medium">Applied to all scheduled shifts for this site.</span>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="font-bold text-[#032031] text-[11px]">
+                          VAT Treatment
+                        </label>
+                        <select
+                          value={provisionForm.vatTreatment || 'STANDARD_20'}
+                          onChange={(e) => setProvisionForm({ ...provisionForm, vatTreatment: e.target.value })}
+                          className="h-9 px-2.5 border border-slate-300 rounded-lg font-bold text-xs bg-white focus:outline-none focus:border-[#032031]"
+                        >
+                          <option value="STANDARD_20">Standard UK VAT (20%)</option>
+                          <option value="EXEMPT">Exempt from VAT</option>
+                          <option value="ZERO_RATED">Zero Rated (0%)</option>
+                          <option value="REVERSE_CHARGE">Domestic Reverse Charge</option>
+                        </select>
+                        <span className="text-[9px] text-slate-500 font-medium">VAT handling for client billing.</span>
+                      </div>
+                    </div>
+
                     <div className="flex flex-col gap-1.5">
                       <label className="font-bold text-[#032031]">Approval Feedback Notes (Published to Client Portal)</label>
                       <textarea
@@ -1497,14 +1747,23 @@ export const SiteRequestsManagement: React.FC = () => {
                   <div className="p-4 bg-[#032031]/5 border border-[#032031]/15 rounded-xl flex items-start gap-3 text-slate-800">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-0.5 text-xs">
-                      <span className="font-black text-[#032031]">Automatic Site Geofencing</span>
+                      <span className="font-black text-[#032031]">Automatic Site Geofencing & Pricing Lock</span>
                       <p className="text-[11px] leading-relaxed text-slate-600 font-medium">
-                        Approving this request creates the official physical property in the database with standard 100m geofence validation. Specific coordinate adjustments can be modified anytime in <strong>Site Management</strong>.
+                        Approving this request creates the official physical property in the database with standard 100m geofence validation and locked agreed commercial rates.
                       </p>
                     </div>
                   </div>
 
                 </form>
+
+                {/* Uploaded Contracts & Service Agreements Card */}
+                <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-2xs">
+                  <ContractsSection
+                    serviceRequestId={selectedRequest.id}
+                    clientId={selectedRequest.clientId}
+                    entityName={selectedRequest.propertyName}
+                  />
+                </div>
 
               </div>
 
@@ -1949,6 +2208,81 @@ export const SiteRequestsManagement: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Proposed Commercial Terms During Survey Card */}
+                  <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 flex flex-col gap-3 shadow-2xs">
+                    <span className="font-black text-indigo-950 text-xs uppercase tracking-wider flex items-center justify-between border-b border-indigo-200/70 pb-2">
+                      <span className="flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5 text-indigo-700" />
+                        Commercial Terms & Agreed Pricing
+                      </span>
+                      <span className="text-[9px] font-black uppercase text-indigo-700">£ GBP</span>
+                    </span>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                          Charge Rate (£/hr)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="e.g., 22.50"
+                          value={surveyForm.chargeRatePerHour}
+                          onChange={(e) => setSurveyForm({ ...surveyForm, chargeRatePerHour: e.target.value })}
+                          className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-bold focus:outline-none focus:border-indigo-600 bg-white transition"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                          Pricing Status
+                        </label>
+                        <select
+                          value={surveyForm.pricingStatus}
+                          onChange={(e) => setSurveyForm({ ...surveyForm, pricingStatus: e.target.value as PricingStatus })}
+                          className="h-10 px-2.5 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600 bg-white transition"
+                        >
+                          <option value="PROPOSED">PROPOSED</option>
+                          <option value="AGREED">AGREED</option>
+                          <option value="DRAFT">DRAFT</option>
+                          <option value="SUPERSEDED">SUPERSEDED</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                          Weekly Hours (Est.)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="e.g., 84"
+                          value={surveyForm.expectedWeeklyHours}
+                          onChange={(e) => setSurveyForm({ ...surveyForm, expectedWeeklyHours: e.target.value })}
+                          className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600 bg-white transition"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                          VAT Treatment
+                        </label>
+                        <select
+                          value={surveyForm.vatTreatment}
+                          onChange={(e) => setSurveyForm({ ...surveyForm, vatTreatment: e.target.value })}
+                          className="h-10 px-2.5 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-indigo-600 bg-white transition"
+                        >
+                          <option value="STANDARD_20">Standard VAT (20%)</option>
+                          <option value="EXEMPT">Exempt from VAT</option>
+                          <option value="ZERO_RATED">Zero-Rated</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Physical Survey & Assessment Findings */}
                   <div className="p-4 rounded-xl border border-slate-200 bg-white flex flex-col gap-3 shadow-2xs">
                     <span className="font-black text-[#032031] text-xs uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
@@ -2026,6 +2360,253 @@ export const SiteRequestsManagement: React.FC = () => {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 7. DEDICATED COMMERCIAL PRICING & CLIENT RATE CONFIGURATION MODAL */}
+      {isPricingModalOpen && selectedRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/75 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-2xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden font-jakarta">
+            
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-black/10 flex items-center justify-between bg-[#032031] text-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-white/10 border border-white/15 text-indigo-300 shrink-0">
+                  <Coins className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-300">
+                    Commercial Terms & Rate Proposal
+                  </span>
+                  <h3 className="text-base font-black text-white truncate">
+                    {selectedRequest.propertyName}
+                  </h3>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsPricingModalOpen(false)}
+                className="w-8 h-8 rounded-xl border border-white/20 text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handlePricingSubmit} className="flex flex-col flex-grow overflow-hidden">
+              <div className="flex-grow overflow-y-auto p-5 sm:p-6 flex flex-col gap-4 text-xs">
+                
+                {/* Pricing Status & Charge Rate Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                      Pricing Status *
+                    </label>
+                    <select
+                      value={pricingForm.pricingStatus}
+                      onChange={(e) => setPricingForm({ ...pricingForm, pricingStatus: e.target.value as PricingStatus })}
+                      className="h-10 px-3 border border-slate-300 rounded-xl font-bold text-xs bg-white focus:outline-none focus:border-[#032031]"
+                    >
+                      <option value="DRAFT">DRAFT (Internal Estimate)</option>
+                      <option value="PROPOSED">PROPOSED (Sent to Client)</option>
+                      <option value="AGREED">AGREED (Confirmed by Client)</option>
+                      <option value="SUPERSEDED">SUPERSEDED (Archived)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                      Hourly Charge Rate per Guard (£ GBP) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-2.5 font-bold text-slate-500">£</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        placeholder="22.50"
+                        value={pricingForm.chargeRatePerHour}
+                        onChange={(e) => setPricingForm({ ...pricingForm, chargeRatePerHour: e.target.value })}
+                        className="h-10 pl-8 pr-3 w-full border border-slate-300 rounded-xl font-bold text-sm bg-white focus:outline-none focus:border-[#032031]"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Manning & Hours Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                      Guards Needed
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={pricingForm.requiredGuardsCount}
+                      onChange={(e) => setPricingForm({ ...pricingForm, requiredGuardsCount: parseInt(e.target.value, 10) || 1 })}
+                      className="h-10 px-3 border border-slate-300 rounded-xl font-semibold text-xs bg-white focus:outline-none focus:border-[#032031]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                      Shift Duration (Hrs)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="1"
+                      max="24"
+                      value={pricingForm.expectedShiftDurationHours}
+                      onChange={(e) => setPricingForm({ ...pricingForm, expectedShiftDurationHours: e.target.value })}
+                      placeholder="12"
+                      className="h-10 px-3 border border-slate-300 rounded-xl font-semibold text-xs bg-white focus:outline-none focus:border-[#032031]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                      Weekly Hours
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="1"
+                      value={pricingForm.expectedWeeklyHours}
+                      onChange={(e) => setPricingForm({ ...pricingForm, expectedWeeklyHours: e.target.value })}
+                      placeholder="84"
+                      className="h-10 px-3 border border-slate-300 rounded-xl font-semibold text-xs bg-white focus:outline-none focus:border-[#032031]"
+                    />
+                  </div>
+                </div>
+
+                {/* Special Rates Row */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-2.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                    Special & Supplemental Rates (Optional)
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold uppercase text-slate-500">Night Rate (£/hr)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="e.g. 25.00"
+                        value={pricingForm.nightRatePerHour}
+                        onChange={(e) => setPricingForm({ ...pricingForm, nightRatePerHour: e.target.value })}
+                        className="h-9 px-2.5 border border-slate-300 rounded-lg text-xs bg-white font-semibold"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold uppercase text-slate-500">Weekend Rate (£/hr)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="e.g. 26.50"
+                        value={pricingForm.weekendRatePerHour}
+                        onChange={(e) => setPricingForm({ ...pricingForm, weekendRatePerHour: e.target.value })}
+                        className="h-9 px-2.5 border border-slate-300 rounded-lg text-xs bg-white font-semibold"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-bold uppercase text-slate-500">Overtime Rate (£/hr)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="e.g. 28.00"
+                        value={pricingForm.overtimeRatePerHour}
+                        onChange={(e) => setPricingForm({ ...pricingForm, overtimeRatePerHour: e.target.value })}
+                        className="h-9 px-2.5 border border-slate-300 rounded-lg text-xs bg-white font-semibold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* VAT Treatment Row */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                    VAT Treatment & Billing Policy *
+                  </label>
+                  <select
+                    value={pricingForm.vatTreatment}
+                    onChange={(e) => setPricingForm({ ...pricingForm, vatTreatment: e.target.value })}
+                    className="h-10 px-3 border border-slate-300 rounded-xl font-bold text-xs bg-white focus:outline-none focus:border-[#032031]"
+                  >
+                    <option value="STANDARD_20">Standard UK VAT (20% added to gross invoice)</option>
+                    <option value="EXEMPT">Exempt from VAT</option>
+                    <option value="ZERO_RATED">Zero-Rated Supplies (0%)</option>
+                    <option value="REVERSE_CHARGE">Construction / Security Domestic Reverse Charge</option>
+                  </select>
+                </div>
+
+                {/* Pricing Notes & Commercial Terms */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                    Pricing Notes & Commercial Terms
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={pricingForm.pricingNotes}
+                    onChange={(e) => setPricingForm({ ...pricingForm, pricingNotes: e.target.value })}
+                    placeholder="e.g. Payment terms Net 30 days, 4-hour cancellation notice window, bank holiday multiplier at 1.5x..."
+                    className="p-3 border border-slate-300 rounded-xl font-medium text-xs bg-white resize-none focus:outline-none focus:border-[#032031]"
+                  />
+                </div>
+
+                {/* Live Value Calculation Callout */}
+                {pricingForm.chargeRatePerHour && pricingForm.expectedWeeklyHours && (
+                  <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-center justify-between gap-3 text-emerald-950">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="w-5 h-5 text-emerald-700 shrink-0" />
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                          Estimated Weekly Client Billing
+                        </span>
+                        <span className="text-xs text-emerald-900 font-semibold">
+                          Based on {pricingForm.expectedWeeklyHours} hrs @ £{pricingForm.chargeRatePerHour}/hr
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-base sm:text-lg font-black text-emerald-800">
+                        £{(parseFloat(pricingForm.chargeRatePerHour) * parseFloat(pricingForm.expectedWeeklyHours)).toFixed(2)}
+                      </span>
+                      <span className="block text-[9px] text-emerald-700 font-bold uppercase">Excl. VAT</span>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+
+              {/* Actions Footer */}
+              <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsPricingModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 rounded-xl font-bold hover:bg-slate-100 text-slate-700 text-xs transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading || !pricingForm.chargeRatePerHour}
+                  className="px-6 py-2 bg-[#032031] hover:bg-black text-white rounded-xl font-black uppercase tracking-wider text-xs transition cursor-pointer disabled:opacity-50 shadow-xs flex items-center gap-2"
+                >
+                  <Coins className="w-4 h-4 text-indigo-300" />
+                  <span>{actionLoading ? 'Saving Pricing...' : 'Save Pricing Terms'}</span>
+                </button>
+              </div>
+            </form>
+
           </div>
         </div>
       )}

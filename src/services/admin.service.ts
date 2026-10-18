@@ -236,6 +236,40 @@ export const adminService = {
     return api.put<{ message: string; request: AdminSiteServiceRequest }>(`/admin/requests/${id}/survey-notes`, payload);
   },
 
+  // Update commercial terms and proposed pricing for a Service Request
+  updateSiteServiceRequestPricing: (id: string, payload: UpdateServiceRequestPricingPayload) => {
+    return api.put<{ message: string; request: AdminSiteServiceRequest }>(`/admin/requests/${id}/pricing`, payload);
+  },
+
+  // Guard Site-Specific Hourly Pay Rates
+  getGuardSiteRates: (guardId: string) => {
+    return api.get<{ rates: GuardSiteRate[] }>(`/admin/guards/${guardId}/rates`);
+  },
+
+  createGuardSiteRate: (guardId: string, payload: CreateGuardSiteRatePayload) => {
+    return api.post<{ message: string; rate: GuardSiteRate }>(`/admin/guards/${guardId}/rates`, payload);
+  },
+
+  updateGuardSiteRate: (guardId: string, rateId: string, payload: Partial<CreateGuardSiteRatePayload>) => {
+    return api.patch<{ message: string; rate: GuardSiteRate }>(`/admin/guards/${guardId}/rates/${rateId}`, payload);
+  },
+
+  deleteGuardSiteRate: (guardId: string, rateId: string) => {
+    return api.delete<{ message: string }>(`/admin/guards/${guardId}/rates/${rateId}`);
+  },
+
+  // Financial Management & Reporting (Real-time aggregation in GBP £)
+  getFinancialReport: (params?: { startDate?: string; endDate?: string; clientId?: string; siteId?: string; guardId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.clientId) query.append('clientId', params.clientId);
+    if (params?.siteId) query.append('siteId', params.siteId);
+    if (params?.guardId) query.append('guardId', params.guardId);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return api.get<FinancialReportData>(`/admin/reports/financials${qs}`);
+  },
+
   // Fetch all physical sites
   getAllSites: (clientId?: string) => {
     const qs = clientId ? `?clientId=${clientId}` : '';
@@ -380,7 +414,7 @@ export const adminService = {
     query.append('endTime', params.endTime);
     if (params.excludeShiftId) query.append('excludeShiftId', params.excludeShiftId);
 
-    return api.get<{ guards: EligibleGuard[] }>(`/admin/shifts/eligible-guards?${query.toString()}`);
+    return api.get<{ guards: EligibleGuard[]; pricing?: ShiftPricingSuggestion }>(`/admin/shifts/eligible-guards?${query.toString()}`);
   },
 
   // Live Operations Attendance Monitor
@@ -441,6 +475,7 @@ export type ServiceRequestType = 'NEW_SITE_DEPLOYMENT' | 'EXTRA_GUARD_COVERAGE' 
 export type ServiceRequestStatus = 'PENDING_REVIEW' | 'UNDER_ASSESSMENT' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 export type ServiceRequestUrgency = 'STANDARD' | 'PRIORITY' | 'EMERGENCY';
 export type VisitStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
+export type PricingStatus = 'DRAFT' | 'PROPOSED' | 'AGREED' | 'SUPERSEDED';
 
 export interface AdminVisitAssignee {
   id: string;
@@ -460,6 +495,31 @@ export interface RecordSurveyNotesPayload {
   surveyContactPhone?: string | null;
   surveyNotes?: string | null;
   surveyConductedAt?: string | null;
+  pricingStatus?: PricingStatus;
+  chargeRatePerHour?: number | null;
+  expectedShiftDurationHours?: number | null;
+  expectedWeeklyHours?: number | null;
+  expectedMonthlyHours?: number | null;
+  nightRatePerHour?: number | null;
+  weekendRatePerHour?: number | null;
+  overtimeRatePerHour?: number | null;
+  vatTreatment?: string | null;
+  pricingNotes?: string | null;
+  requiredGuardsCount?: number;
+}
+
+export interface UpdateServiceRequestPricingPayload {
+  pricingStatus?: PricingStatus;
+  chargeRatePerHour?: number | null;
+  expectedShiftDurationHours?: number | null;
+  expectedWeeklyHours?: number | null;
+  expectedMonthlyHours?: number | null;
+  nightRatePerHour?: number | null;
+  weekendRatePerHour?: number | null;
+  overtimeRatePerHour?: number | null;
+  vatTreatment?: string | null;
+  pricingNotes?: string | null;
+  requiredGuardsCount?: number;
 }
 
 export interface AdminSiteServiceRequest {
@@ -502,6 +562,17 @@ export interface AdminSiteServiceRequest {
   surveyContactPhone?: string | null;
   surveyNotes?: string | null;
   surveyConductedAt?: string | null;
+  // Commercial Pricing Terms
+  pricingStatus?: PricingStatus | null;
+  chargeRatePerHour?: number | string | null;
+  expectedShiftDurationHours?: number | string | null;
+  expectedWeeklyHours?: number | string | null;
+  expectedMonthlyHours?: number | string | null;
+  nightRatePerHour?: number | string | null;
+  weekendRatePerHour?: number | string | null;
+  overtimeRatePerHour?: number | string | null;
+  vatTreatment?: string | null;
+  pricingNotes?: string | null;
   createdAt: string;
   updatedAt: string;
   client?: ClientManagementProfile | null;
@@ -514,6 +585,8 @@ export interface AdminSiteServiceRequest {
     geofenceRadiusMeters?: number;
     siteInstructions?: string | null;
     emergencyContact?: string | null;
+    billingRateHour?: number | string | null;
+    vatTreatment?: string | null;
   } | null;
 }
 
@@ -526,6 +599,8 @@ export interface AdminSite {
   geofenceRadiusMeters: number;
   siteInstructions?: string | null;
   emergencyContact?: string | null;
+  billingRateHour?: number | string | null;
+  vatTreatment?: string | null;
   client: {
     id: string;
     companyName: string;
@@ -557,6 +632,124 @@ export interface ApproveSiteRequestPayload {
   siteInstructions?: string | null;
   emergencyContact?: string | null;
   adminFeedbackNotes?: string | null;
+  billingRateHour?: number;
+  vatTreatment?: string | null;
+}
+
+export interface GuardSiteRate {
+  id: string;
+  guardId: string;
+  siteId: string;
+  payRateHour: number | string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  isActive: boolean;
+  notes?: string | null;
+  createdAt: string;
+  site?: {
+    id: string;
+    name: string;
+    address: string;
+    client?: {
+      id: string;
+      companyName: string;
+    };
+  };
+}
+
+export interface CreateGuardSiteRatePayload {
+  siteId: string;
+  payRateHour: number;
+  effectiveFrom?: string;
+  effectiveTo?: string | null;
+  notes?: string | null;
+  isActive?: boolean;
+}
+
+export interface FinancialReportData {
+  currency: string;
+  currencySymbol: string;
+  summary: {
+    totalShifts: number;
+    totalCompletedShifts: number;
+    totalInProgressShifts?: number;
+    totalIncompleteShifts: number;
+    totalScheduledUpcomingShifts: number;
+    totalScheduledHours: number;
+    totalRecordedHours: number;
+    totalCompletedHours?: number;
+    totalEstimatedCharges: number;
+    totalEstimatedWages: number;
+    totalEstimatedDifference: number;
+    grossMarginPercentage?: number;
+    totalCompletedCharges?: number;
+    totalCompletedWages?: number;
+    totalForecastUpcomingCharges?: number;
+    totalForecastUpcomingWages?: number;
+    totalMissedShifts?: number;
+    totalMissedHours?: number;
+    totalMissedRevenueImpact?: number;
+    notice: string;
+  };
+  byClient: Array<{
+    clientId: string;
+    clientName: string;
+    shiftCount: number;
+    totalHours: number;
+    estimatedCharges: number;
+    estimatedWages: number;
+    estimatedDifference: number;
+    marginPercentage?: number;
+    averageChargeRate?: number;
+  }>;
+  bySite: Array<{
+    siteId: string;
+    siteName: string;
+    clientName: string;
+    shiftCount: number;
+    totalHours: number;
+    estimatedCharges: number;
+    estimatedWages: number;
+    estimatedDifference: number;
+    marginPercentage?: number;
+    averageChargeRate?: number;
+  }>;
+  byGuard: Array<{
+    guardId: string;
+    guardName: string;
+    shiftCount: number;
+    totalHours: number;
+    estimatedWages: number;
+    averagePayRate: number;
+  }>;
+  shifts: Array<{
+    shiftId: string;
+    siteId: string;
+    siteName: string;
+    clientId: string;
+    clientName: string;
+    guardId: string;
+    guardName: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    checkInTime?: string | null;
+    checkOutTime?: string | null;
+    scheduledDurationHours: number;
+    recordedDurationHours: number;
+    billableHours: number;
+    clientBillingRateHour: number;
+    guardPayRateHour: number;
+    estimatedCharge: number;
+    estimatedWage: number;
+    estimatedDifference: number;
+    isCompleted: boolean;
+    isInProgress?: boolean;
+    isIncomplete: boolean;
+    isUpcoming?: boolean;
+    missedHours?: number;
+    missedRevenueImpact?: number;
+  }>;
 }
 
 export interface StaffMember {
@@ -690,10 +883,19 @@ export interface EligibleGuard {
   siaLicenceNumber: string | null;
   siaExpiryDate: string | null;
   payRatePerHour: string | number;
+  basePayRatePerHour?: number;
+  hasSiteSpecificRate?: boolean;
   status: string;
   isEligible: boolean;
   ineligibilityReason: string | null;
   travelWarning: string | null;
+}
+
+export interface ShiftPricingSuggestion {
+  suggestedClientBillingRate: number;
+  rateTier: 'WEEKEND' | 'NIGHT' | 'SITE_CONTRACT' | 'REQUEST_AGREED' | 'CLIENT_MASTER';
+  isWeekend: boolean;
+  isNightShift: boolean;
 }
 
 export interface CreateShiftPayload {
@@ -701,6 +903,8 @@ export interface CreateShiftPayload {
   guardId: string;
   startTime: string;
   endTime: string;
+  guardPayRateHour?: number;
+  clientBillingRateHour?: number;
 }
 
 export interface UpdateShiftPayload {
@@ -709,6 +913,8 @@ export interface UpdateShiftPayload {
   startTime?: string;
   endTime?: string;
   status?: ShiftStatus;
+  guardPayRateHour?: number;
+  clientBillingRateHour?: number;
 }
 
 

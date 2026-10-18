@@ -42,4 +42,15 @@ export const StaticSiteMap = dynamic(
   }
 );
 
+/**
+ * SSR-Safe Interactive Guard Navigation & Location Tracking Map
+ */
+export const GuardNavigationMap = dynamic(
+  () => import('./GuardNavigationMap').then((mod) => mod.GuardNavigationMap),
+  {
+    ssr: false,
+    loading: () => <MapLoadingPlaceholder height="280px" text="Loading GPS navigation map..." />,
+  }
+);
+
 export default LocationPickerMap;

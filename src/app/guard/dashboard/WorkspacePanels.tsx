@@ -3,10 +3,16 @@
 import React from 'react';
 import { GuardShiftConsole } from './GuardShiftConsole';
 import { ShiftCheckIn as ShiftCheckInConsole } from './ShiftCheckIn';
+import { GuardEarningsReport } from './GuardEarningsReport';
 
 // 1. My Shifts Panel Component
 export const MyShifts: React.FC = () => {
   return <GuardShiftConsole initialTab="today" />;
+};
+
+// 1b. Guard Earnings & Timesheets Panel Component
+export const GuardEarnings: React.FC = () => {
+  return <GuardEarningsReport />;
 };
 
 // 2. Shift Check In Panel Component

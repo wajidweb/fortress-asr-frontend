@@ -37,7 +37,9 @@ import {
   AlertCircle,
   Check,
   Pencil,
-  RotateCw
+  RotateCw,
+  Coins,
+  Receipt
 } from 'lucide-react';
 
 interface SiteRequestsProps {
@@ -691,6 +693,7 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
                   <th className="py-3 px-4">Coverage Type</th>
                   <th className="py-3 px-4">Officers</th>
                   <th className="py-3 px-4">Target Start</th>
+                  <th className="py-3 px-4">Commercial Rate</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
@@ -739,6 +742,26 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
                           year: 'numeric',
                         })}
                       </div>
+                    </td>
+
+                    {/* Commercial Rate */}
+                    <td className="py-3.5 px-4">
+                      {req.chargeRatePerHour && Number(req.chargeRatePerHour) > 0 ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-black text-xs text-[#032031]">
+                            £{Number(req.chargeRatePerHour).toFixed(2)}/hr
+                          </span>
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.2 rounded w-fit ${
+                            req.pricingStatus === 'AGREED'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                          }`}>
+                            {req.pricingStatus || 'PROPOSED'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-black/40 font-medium">Under Review</span>
+                      )}
                     </td>
 
                     {/* Status badge */}
@@ -1651,6 +1674,89 @@ export const SiteRequests: React.FC<SiteRequestsProps> = ({ onNavigateToSites })
                     </div>
                   )}
                 </div>
+
+                {/* Commercial Agreement & Proposed Hourly Rate Card (Client View) */}
+                {selectedRequest.chargeRatePerHour && Number(selectedRequest.chargeRatePerHour) > 0 && (
+                  <div className="border border-indigo-200 rounded-xl p-5 bg-indigo-50/40 flex flex-col gap-3 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-indigo-200/80 pb-2">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                        <Coins className="w-4 h-4 text-indigo-700" />
+                        Commercial Terms & Agreed Rate (£ GBP)
+                      </span>
+                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${
+                        selectedRequest.pricingStatus === 'AGREED'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-indigo-100 text-indigo-800 border border-indigo-300'
+                      }`}>
+                        {selectedRequest.pricingStatus || 'PROPOSED'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="p-3 rounded-lg bg-white border border-indigo-100 flex flex-col">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">Hourly Charge Rate</span>
+                        <span className="text-base font-black text-[#032031]">
+                          £{Number(selectedRequest.chargeRatePerHour).toFixed(2)}/hr
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold">Per security officer</span>
+                      </div>
+
+                      <div className="p-3 rounded-lg bg-white border border-indigo-100 flex flex-col">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">Weekly Hours</span>
+                        <span className="text-base font-black text-[#032031]">
+                          {selectedRequest.expectedWeeklyHours || 'TBD'} hrs
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold">Contracted service</span>
+                      </div>
+
+                      <div className="p-3 rounded-lg bg-white border border-indigo-100 flex flex-col col-span-2 sm:col-span-1">
+                        <span className="text-[9px] font-bold text-slate-500 uppercase">Est. Weekly Billing</span>
+                        <span className="text-base font-black text-emerald-700">
+                          {selectedRequest.expectedWeeklyHours
+                            ? `£${(Number(selectedRequest.chargeRatePerHour) * Number(selectedRequest.expectedWeeklyHours)).toFixed(2)}`
+                            : '—'}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-semibold">Excl. VAT</span>
+                      </div>
+                    </div>
+
+                    {/* Special Rates Breakdown if set */}
+                    {(selectedRequest.nightRatePerHour || selectedRequest.weekendRatePerHour || selectedRequest.overtimeRatePerHour) && (
+                      <div className="grid grid-cols-3 gap-2 pt-1 text-[10px]">
+                        {selectedRequest.nightRatePerHour && (
+                          <div className="flex flex-col p-2 bg-white/70 rounded-md border border-indigo-100">
+                            <span className="text-[8px] font-bold text-slate-500 uppercase">Night Rate</span>
+                            <span className="font-bold text-[#032031]">£{Number(selectedRequest.nightRatePerHour).toFixed(2)}/hr</span>
+                          </div>
+                        )}
+                        {selectedRequest.weekendRatePerHour && (
+                          <div className="flex flex-col p-2 bg-white/70 rounded-md border border-indigo-100">
+                            <span className="text-[8px] font-bold text-slate-500 uppercase">Weekend Rate</span>
+                            <span className="font-bold text-[#032031]">£{Number(selectedRequest.weekendRatePerHour).toFixed(2)}/hr</span>
+                          </div>
+                        )}
+                        {selectedRequest.overtimeRatePerHour && (
+                          <div className="flex flex-col p-2 bg-white/70 rounded-md border border-indigo-100">
+                            <span className="text-[8px] font-bold text-slate-500 uppercase">Overtime Rate</span>
+                            <span className="font-bold text-[#032031]">£{Number(selectedRequest.overtimeRatePerHour).toFixed(2)}/hr</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">VAT Policy</span>
+                      <span className="font-semibold text-slate-800">{selectedRequest.vatTreatment || 'Standard UK VAT (20%)'}</span>
+                    </div>
+
+                    {selectedRequest.pricingNotes && (
+                      <div className="p-3 bg-white/90 rounded-lg border border-indigo-100 text-xs">
+                        <span className="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Commercial Notes & Terms</span>
+                        <p className="font-medium text-slate-700 leading-relaxed">{selectedRequest.pricingNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Special Instructions & Hazards Card */}
                 {selectedRequest.specialInstructions && (

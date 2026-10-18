@@ -1,1 +1,1 @@
-export { LocationPickerMap, StaticSiteMap } from './DynamicMap';
+export { LocationPickerMap, StaticSiteMap, GuardNavigationMap } from './DynamicMap';

@@ -9,6 +9,8 @@ import Header from './Header';
 import ProfileSettings from './ProfileSettings';
 import SiteRequests from './SiteRequests';
 import SecureSites from './SecureSites';
+import { ClientContracts } from './ClientContracts';
+import { ClientBillingReport } from './ClientBillingReport';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
 import { AlertTriangle } from 'lucide-react';
 
@@ -139,6 +141,10 @@ export default function ClientDashboard() {
             onNavigateToSites={() => setActiveMenu('client-sites')} 
           />
         );
+      case 'client-contracts':
+        return <ClientContracts />;
+      case 'client-billing':
+        return <ClientBillingReport />;
       default:
         return (
           <div className="w-full flex flex-col gap-6 animate-fade-in">
@@ -147,7 +153,7 @@ export default function ClientDashboard() {
                 <span className="text-[10px] font-black uppercase tracking-wider text-black/50">Fortress ASR Security Systems</span>
                 <h1 className="text-2xl font-black text-[#032031]">Welcome, {user.firstName || user.clientProfile?.companyName || 'Corporate Client'}</h1>
                 <p className="text-xs text-black/70 font-semibold leading-relaxed">
-                  Your corporate portal provides real-time access to security officers, digital geofenced properties, and service deployment requests.
+                  Your corporate portal provides real-time access to security officers, digital geofenced properties, service deployment requests, and official billing statements.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3 shrink-0">
@@ -156,6 +162,12 @@ export default function ClientDashboard() {
                   className="px-4 py-2.5 bg-[#032031] text-white text-[11px] font-black uppercase tracking-wider rounded-lg hover:bg-black transition shadow-xs cursor-pointer"
                 >
                   + Request Site Coverage
+                </button>
+                <button
+                  onClick={() => setActiveMenu('client-billing')}
+                  className="px-4 py-2.5 bg-emerald-700 text-white text-[11px] font-black uppercase tracking-wider rounded-lg hover:bg-emerald-800 transition shadow-xs cursor-pointer"
+                >
+                  Billing & Statements
                 </button>
                 <button
                   onClick={() => setActiveMenu('client-sites')}

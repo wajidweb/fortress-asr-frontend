@@ -6,6 +6,7 @@ import { useUIStore } from '@/store/useUIStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
 import { LocationPickerMap } from '@/components/maps';
+import { ContractsSection } from './ContractsSection';
 import { 
   Building2, 
   MapPin, 
@@ -29,7 +30,8 @@ import {
   Inbox,
   CheckCircle2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Coins
 } from 'lucide-react';
 
 interface SiteManagementProps {
@@ -67,6 +69,8 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
     geofenceRadiusMeters: 100,
     siteInstructions: '',
     emergencyContact: '',
+    billingRateHour: 0,
+    vatTreatment: 'STANDARD_20',
   });
   const [saving, setSaving] = useState(false);
   const [locatingGps, setLocatingGps] = useState(false);
@@ -157,6 +161,14 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
     return filteredSites.slice(start, start + pageSize);
   }, [filteredSites, page]);
 
+  // Average billing rate across all sites
+  const averageBillingRate = useMemo(() => {
+    const sitesWithRates = sites.filter((s) => Number(s.billingRateHour || s.client?.billingRateHour || 0) > 0);
+    if (sitesWithRates.length === 0) return '0.00';
+    const sum = sitesWithRates.reduce((acc, s) => acc + Number(s.billingRateHour || s.client?.billingRateHour || 0), 0);
+    return (sum / sitesWithRates.length).toFixed(2);
+  }, [sites]);
+
   // Selection handlers
   const isAllVisibleSelected = paginatedSites.length > 0 && paginatedSites.every((s) => selectedIds.includes(s.id));
   const isSomeVisibleSelected = paginatedSites.some((s) => selectedIds.includes(s.id)) && !isAllVisibleSelected;
@@ -203,6 +215,8 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
     const headers = [
       'Site Name',
       'Client Organization',
+      'Hourly Billing Rate (£/hr)',
+      'VAT Treatment',
       'Address',
       'Latitude',
       'Longitude',
@@ -217,6 +231,8 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
     const rows = targetSites.map((s) => [
       escapeCsv(s.name),
       escapeCsv(s.client?.companyName),
+      escapeCsv(s.billingRateHour && Number(s.billingRateHour) > 0 ? `£${Number(s.billingRateHour).toFixed(2)}/hr` : s.client?.billingRateHour ? `£${Number(s.client.billingRateHour).toFixed(2)}/hr (Client Default)` : 'Unassigned'),
+      escapeCsv(s.vatTreatment || 'STANDARD_20'),
       escapeCsv(s.address),
       escapeCsv(s.latitude),
       escapeCsv(s.longitude),
@@ -287,6 +303,8 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
             <tr>
               <th>Property Name</th>
               <th>Client Organization</th>
+              <th>Billing Rate (£/hr)</th>
+              <th>VAT Treatment</th>
               <th>Address</th>
               <th>GPS Geofence</th>
               <th>Radius</th>
@@ -299,6 +317,8 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
               <tr>
                 <td><strong>${s.name}</strong></td>
                 <td>${s.client?.companyName || 'Corporate Client'}</td>
+                <td><strong style="color: #15803d;">${s.billingRateHour && Number(s.billingRateHour) > 0 ? `£${Number(s.billingRateHour).toFixed(2)}/hr` : s.client?.billingRateHour ? `£${Number(s.client.billingRateHour).toFixed(2)}/hr (Client Default)` : 'Unassigned'}</strong></td>
+                <td>${s.vatTreatment || 'STANDARD_20'}</td>
                 <td>${s.address}</td>
                 <td>${Number(s.latitude).toFixed(4)}, ${Number(s.longitude).toFixed(4)}</td>
                 <td><span class="badge">${s.geofenceRadiusMeters || 100}m</span></td>
@@ -326,6 +346,12 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
   // Edit Modal Handlers
   const handleOpenEdit = (site: AdminSite) => {
     setEditingSite(site);
+    const effectiveBilling = site.billingRateHour !== undefined && site.billingRateHour !== null
+      ? Number(site.billingRateHour)
+      : site.client?.billingRateHour
+      ? Number(site.client.billingRateHour)
+      : 0;
+
     setEditForm({
       name: site.name,
       address: site.address,
@@ -334,6 +360,8 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
       geofenceRadiusMeters: site.geofenceRadiusMeters || 100,
       siteInstructions: site.siteInstructions || '',
       emergencyContact: site.emergencyContact || '',
+      billingRateHour: effectiveBilling,
+      vatTreatment: site.vatTreatment || 'STANDARD_20',
     });
   };
 
@@ -378,6 +406,8 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
         geofenceRadiusMeters: Number(editForm.geofenceRadiusMeters),
         siteInstructions: editForm.siteInstructions || null,
         emergencyContact: editForm.emergencyContact || null,
+        billingRateHour: editForm.billingRateHour !== undefined ? Number(editForm.billingRateHour) : undefined,
+        vatTreatment: editForm.vatTreatment || null,
       });
 
       addToast(`Property "${editForm.name}" updated successfully.`, 'success');
@@ -487,18 +517,21 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
           </div>
         </div>
 
-        {/* Card 4: Total Completed Shifts */}
-        <div className="bg-white border border-slate-300 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-purple-50/40 to-white">
+        {/* Card 4: Commercial Billing Rates */}
+        <div className="bg-white border border-slate-300 rounded-xl p-5 flex items-center justify-between shadow-xs hover:shadow-md transition bg-gradient-to-br from-indigo-50/50 to-white">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-700">
-              Total Deployments
+            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-900">
+              Avg Client Rate (£ GBP)
             </span>
             <span className="text-3xl font-black text-[#032031]">
-              {totalCompletedShifts}
+              £{averageBillingRate}
+            </span>
+            <span className="text-[10px] text-slate-500 font-semibold">
+              {sites.filter((s) => Number(s.billingRateHour || s.client?.billingRateHour || 0) > 0).length} of {sites.length} rated properties
             </span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-[#032031] text-white flex items-center justify-center shadow-inner shrink-0">
-            <Layers className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-xl bg-indigo-700 text-white flex items-center justify-center shadow-inner shrink-0">
+            <Coins className="w-6 h-6" />
           </div>
         </div>
 
@@ -681,6 +714,7 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
                   </th>
                   <th className="py-3 px-4">Property & Address</th>
                   <th className="py-3 px-4">Client Organization</th>
+                  <th className="py-3 px-4">Billing Rate (£/hr)</th>
                   <th className="py-3 px-4">GPS Geofence Centerpoint</th>
                   <th className="py-3 px-4">Guards On Duty</th>
                   <th className="py-3 px-4">Total Deployments</th>
@@ -759,6 +793,41 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
                           </span>
                         </div>
                       </div>
+                    </td>
+
+                    {/* Agreed Billing Rate */}
+                    <td className="py-3.5 px-4">
+                      {site.billingRateHour && Number(site.billingRateHour) > 0 ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 w-fit">
+                            £{Number(site.billingRateHour).toFixed(2)}/hr
+                          </span>
+                          <span className="text-[9px] text-slate-500 font-medium">
+                            {site.vatTreatment ? site.vatTreatment.replace('_', ' ') : 'Site Rate'}
+                          </span>
+                        </div>
+                      ) : site.serviceRequest?.chargeRatePerHour && Number(site.serviceRequest.chargeRatePerHour) > 0 ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-800 border border-indigo-300 w-fit">
+                            £{Number(site.serviceRequest.chargeRatePerHour).toFixed(2)}/hr
+                          </span>
+                          <span className="text-[9px] text-indigo-700 font-medium">Request Agreed</span>
+                        </div>
+                      ) : site.client?.billingRateHour && Number(site.client.billingRateHour) > 0 ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-100 text-slate-700 border border-slate-200 w-fit">
+                            £{Number(site.client.billingRateHour).toFixed(2)}/hr
+                          </span>
+                          <span className="text-[9px] text-slate-500 font-medium">Client Default</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-50 text-amber-800 border border-amber-200 w-fit">
+                            £0.00/hr
+                          </span>
+                          <span className="text-[9px] text-amber-700 font-medium">Needs Rate Setup</span>
+                        </div>
+                      )}
                     </td>
 
                     {/* GPS Coordinates & Geofence Radius */}
@@ -1235,6 +1304,57 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
                     </div>
                   </div>
 
+                  {/* Commercial Billing & VAT Configuration */}
+                  <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 flex flex-col gap-3 shadow-2xs">
+                    <span className="font-black text-indigo-950 text-xs uppercase tracking-wider flex items-center justify-between border-b border-indigo-200/70 pb-2">
+                      <span className="flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5 text-indigo-700" />
+                        Commercial Billing Terms (£ GBP)
+                      </span>
+                      <span className="text-[9px] font-bold text-indigo-800">
+                        Client Base: £{Number(editingSite.client?.billingRateHour || 0).toFixed(2)}/hr
+                      </span>
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                          Site Hourly Billing Rate (£/hr) *
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2 font-bold text-slate-400 text-xs">£</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editForm.billingRateHour || ''}
+                            onChange={(e) => setEditForm({ ...editForm, billingRateHour: e.target.value ? parseFloat(e.target.value) : 0 })}
+                            placeholder="e.g. 24.50"
+                            className="pl-7 pr-3 h-9 w-full border border-slate-300 rounded-lg text-xs font-bold bg-white focus:outline-none focus:border-[#032031]"
+                          />
+                        </div>
+                        <span className="text-[9px] text-slate-500 font-medium">Applied to all scheduled shifts for this site.</span>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-black uppercase tracking-wider text-slate-700">
+                          VAT Treatment
+                        </label>
+                        <select
+                          value={editForm.vatTreatment}
+                          onChange={(e) => setEditForm({ ...editForm, vatTreatment: e.target.value })}
+                          className="h-9 px-2.5 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:outline-none focus:border-[#032031]"
+                        >
+                          <option value="STANDARD_20">Standard UK VAT (20%)</option>
+                          <option value="EXEMPT">Exempt from VAT</option>
+                          <option value="ZERO_RATED">Zero-Rated Supplies (0%)</option>
+                          <option value="REVERSE_CHARGE">Domestic Reverse Charge</option>
+                        </select>
+                        <span className="text-[9px] text-slate-500 font-medium">VAT treatment on client charges.</span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Active Guards On-Site Roster */}
                   <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex flex-col gap-2 shadow-2xs">
                     <div className="flex items-center justify-between">
@@ -1293,6 +1413,15 @@ export const SiteManagement: React.FC<SiteManagementProps> = ({ onNavigateToRequ
                       <span className="text-[9px] font-black uppercase text-slate-400">Patrol Routes</span>
                       <span className="text-sm font-black text-indigo-700">{editingSite.totalPatrolRoutes || 0}</span>
                     </div>
+                  </div>
+
+                  {/* Site Signed Contracts & Addendums */}
+                  <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
+                    <ContractsSection
+                      siteId={editingSite.id}
+                      clientId={editingSite.client.id}
+                      entityName={editingSite.name}
+                    />
                   </div>
 
                 </div>

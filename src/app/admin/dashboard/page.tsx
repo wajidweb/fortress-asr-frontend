@@ -16,6 +16,7 @@ import { AttendanceManagement } from './AttendanceManagement';
 import AuditLogsManagement from './AuditLogsManagement';
 import UsersRolesManagement from './UsersRolesManagement';
 import AdminSettings from './AdminSettings';
+import FinancialReporting from './FinancialReporting';
 
 
 export default function AdminDashboard() {
@@ -149,6 +150,7 @@ export default function AdminDashboard() {
           )}
           {activeMenu === 'rota' && hasPermission(user, 'shifts:read') && <RotaManagement />}
           {activeMenu === 'attendance' && hasPermission(user, 'shifts:read') && <AttendanceManagement />}
+          {(activeMenu === 'finance' || activeMenu === 'reports') && (hasPermission(user, 'reports:read') || user.role === 'SUPER_ADMIN') && <FinancialReporting />}
           {activeMenu === 'audit-logs' && user.role === 'SUPER_ADMIN' && <AuditLogsManagement />}
           {activeMenu === 'users-roles' && user.role === 'SUPER_ADMIN' && <UsersRolesManagement />}
           {activeMenu === 'company-settings' && user.role === 'SUPER_ADMIN' && <AdminSettings />}

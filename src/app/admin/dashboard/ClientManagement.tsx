@@ -6,6 +6,7 @@ import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore, hasPermission } from '@/store/useAuthStore';
 import { getFullImageUrl } from '@/services/api';
 import LoaderRectangle from '@/components/ui/LoaderRectangle';
+import { ContractsSection } from './ContractsSection';
 import { 
   Building2, 
   CheckCircle2, 
@@ -1038,6 +1039,14 @@ export const ClientManagement: React.FC = () => {
                         )}
                       </div>
 
+                    </div>
+
+                    {/* Signed Contracts & Service Agreements Card */}
+                    <div className="bg-white border border-black/10 rounded-2xl p-5 flex flex-col gap-4 shadow-xs">
+                      <ContractsSection
+                        clientId={selectedClient.id}
+                        entityName={selectedClient.companyName || 'Client'}
+                      />
                     </div>
 
                     {/* Immutable Audit Trail & System Records Card */}

@@ -7,7 +7,7 @@ import {
   Settings, Calendar, ClipboardList, LayoutGrid,
   Activity, AlertTriangle, ShieldCheck, FileText, 
   BellRing, Compass, LogIn, ChevronLeft, ChevronRight as ChevronRightIcon,
-  ShieldAlert
+  ShieldAlert, Coins
 } from 'lucide-react';
 import { User } from '@/store/useAuthStore';
 
@@ -163,6 +163,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               )}
 
+              {/* Earnings & Timesheets - Locked if profile is incomplete */}
+              {isProfileComplete && (
+                <button 
+                  onClick={() => setActiveMenu('earnings')}
+                  title="Earnings & Timesheets"
+                  className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
+                    ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                    ${activeMenu === 'earnings' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  `}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Coins className="w-3.5 h-3.5 shrink-0" />
+                    <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                      Earnings & Timesheets
+                    </span>
+                  </div>
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'earnings' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                </button>
+              )}
+
               {/* Visual Check In - Locked if profile is incomplete */}
               {isProfileComplete && (
                 <button 
@@ -200,6 +220,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </span>
                   </div>
                   <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'my-rota' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
+                </button>
+              )}
+
+              {/* My Employment Contracts - Locked if profile is incomplete */}
+              {isProfileComplete && (
+                <button 
+                  onClick={() => setActiveMenu('guard-contracts')}
+                  title="My Contracts"
+                  className={`w-full flex items-center rounded-lg text-[10px] font-bold tracking-wide transition-all duration-300 ease-in-out
+                    ${isSidebarOpen ? 'px-3 py-2 justify-between' : 'p-2.5 justify-center'}
+                    ${activeMenu === 'guard-contracts' ? 'bg-white text-[#032031]' : 'hover:bg-white/5 text-white'}
+                  `}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                    <span className={`transition-all duration-300 ease-in-out truncate ${isSidebarOpen ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0 overflow-hidden'}`}>
+                      My Contracts
+                    </span>
+                  </div>
+                  <div className={`w-1 h-1 rounded-full bg-[#032031] transition-all duration-300 ${isSidebarOpen && activeMenu === 'guard-contracts' ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`} />
                 </button>
               )}
             </div>
